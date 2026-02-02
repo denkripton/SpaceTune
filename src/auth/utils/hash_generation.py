@@ -12,3 +12,5 @@ class Password:
     @staticmethod
     def check_password(input_password: str, valid_password: bytes) -> bool:
         return bcrypt.checkpw(input_password.encode(), valid_password)
+
+

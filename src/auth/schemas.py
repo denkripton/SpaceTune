@@ -5,7 +5,7 @@ import re
 
 
 
-class UsersCreationSchema(BaseModel):
+class UserCreate(BaseModel):
     username: str = Field(max_length=20)
     email: EmailStr = Field(max_length=50, examples=["user@gmail.com"])
     password: str = Field(min_length=8, max_length=64)
@@ -17,7 +17,7 @@ class UsersCreationSchema(BaseModel):
         return password
 
 
-class UserReadSchema(BaseModel):
+class UserRead(BaseModel):
     id: uuid.UUID
     username: str = Field(max_length=20)
     email: EmailStr = Field(max_length=50, examples=["user@gmail.com"])
@@ -28,5 +28,9 @@ class ProfileCreationSchema(BaseModel):
     bio: str
 
 
-class UserProfileReadSchema(UserReadSchema, ProfileCreationSchema):
+class UserProfileReadSchema(UserRead, ProfileCreationSchema):
     pass
+
+class UserLoginSchema(BaseModel):
+    username: str = Field(max_length=20)
+    password: str = Field(min_length=8, max_length=64)
