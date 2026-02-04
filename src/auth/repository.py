@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from src.auth.schemas import UserCreate, UserRead
+from src.auth.schemas import UserCreateSchema, UserRead, UserLoginSchema
 
 
 class UserRepository(ABC):
-
     @abstractmethod
-    async def create(self, data: UserCreate) -> UserRead:
+    async def create(self, data: UserCreateSchema) -> UserRead:
         pass
 
     @abstractmethod

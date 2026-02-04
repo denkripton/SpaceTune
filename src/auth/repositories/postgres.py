@@ -3,9 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.repository import UserRepository
 from src.auth.models import User
-from src.auth.utils.hash_generation import Password
-
-pw_manager = Password()
+from src.auth.utils.hash_generation import pw_manager
 
 
 class PostgresUserRepository(UserRepository):
@@ -14,6 +12,17 @@ class PostgresUserRepository(UserRepository):
 
     async def create(self, data):
         data = data.model_dump()
+
+        result = await self.session.execute(
+            select(User).where(User.username == data["username"])
+        )
+        user = result.scalars().first()
+
+        if user is not None:
+            raise HTTPException(
+                status_code=422, detail="User with this username already exists"
+            )
+
         data["password"] = pw_manager.hash_password(data["password"])
 
         user = User(**data)

@@ -14,3 +14,4 @@ class Password:
         return bcrypt.checkpw(input_password.encode(), valid_password)
 
 
+pw_manager = Password()
