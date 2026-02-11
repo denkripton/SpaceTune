@@ -1,16 +1,10 @@
-from abc import ABC, abstractmethod
-from src.auth.schemas import UserCreateSchema, UserRead, UserLoginSchema
+from src.repositories.postgres import SQLAlchemyRepository
+from src.auth.models import User
 
 
-class UserRepository(ABC):
-    @abstractmethod
-    async def create(self, data: UserCreateSchema) -> UserRead:
-        pass
+class UserRepository(SQLAlchemyRepository):
+    model = User
 
-    @abstractmethod
-    async def get_by_email(self, email: str) -> UserRead | None:
-        pass
-
-    @abstractmethod
-    async def get_by_username(self, username: str) -> UserRead | None:
-        pass
+    async def get_by_email(self, email: str):
+        user = await self.get_one(email=email)
+        return user

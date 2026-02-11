@@ -1,19 +1,19 @@
 from fastapi import Depends, Request, Response, HTTPException
 from typing import Optional
 
-from src.auth.service import UserService, AuthService
+from src.auth.service import UserService
 from src.auth.repository import UserRepository
-from src.auth.repositories.postgres import PostgresUserRepository
+from src.repository import ABCRepository
 from src.dependencies import get_session
 from src.auth.utils.jwt import JWT
 
 
-async def get_user_repo(session=Depends(get_session)) -> UserRepository:
-    return PostgresUserRepository(session)
+async def get_user_repo(session=Depends(get_session)) -> ABCRepository:
+    return UserRepository(session)
 
 
 async def get_user_service(repo: UserRepository = Depends(get_user_repo)):
-    return UserService(repo)
+    return UserService(repo=repo, jwt=None, response=None)
 
 
 def get_jwt_service() -> JWT:
@@ -25,14 +25,14 @@ async def get_auth_service(
     repo: UserRepository = Depends(get_user_repo),
     jwt: JWT = Depends(get_jwt_service),
 ):
-    return AuthService(repo=repo, jwt=jwt, response=response)
+    return UserService(response=response, repo=repo, jwt=jwt)
 
 
 async def get_current_user(
     request: Request, response: Response, jwt: JWT = Depends(get_jwt_service)
 ):
     auth_header: Optional[str] = request.headers.get("Authorization")
-    token = auth_header.replace("Bearer ", "") if auth_header else None
+    token = auth_header.replace("Bearer", "") if auth_header else None
 
     payload = jwt.validate_token(token)
 
@@ -43,7 +43,7 @@ async def get_current_user(
     refresh_token = jwt.validate_token(get_refresh_token)
 
     if refresh_token is None:
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=401, detail="User not authorized")
 
     new_access_token = jwt.create_access_token(refresh_token["sub"])
 

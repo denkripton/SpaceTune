@@ -7,10 +7,12 @@ import uuid
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4)
-    username: Mapped[str] = mapped_column(String(100), unique=True, primary_key=True)
-    password: Mapped[bytes] = mapped_column()
-    email: Mapped[str] = mapped_column(String(50), unique=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
+    )
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    password: Mapped[bytes] = mapped_column(nullable=False)
+    email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -29,8 +31,6 @@ class UserProfile(Base):
     birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
     bio: Mapped[str] = mapped_column(Text, nullable=True)
 
-    user_username: Mapped[str] = mapped_column(
-        ForeignKey("users.username"), unique=True
-    )
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
 
     user: Mapped["User"] = relationship(back_populates="profile")

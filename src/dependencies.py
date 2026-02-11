@@ -6,4 +6,4 @@ async def get_session() -> AsyncSession:
         try:
             yield session
         finally:
-            session.close()
+            await session.close()

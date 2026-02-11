@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 2dda0b1193a8
+Revision ID: f2d813194519
 Revises: 
-Create Date: 2026-02-01 20:47:19.873212
+Create Date: 2026-02-10 16:05:48.518244
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2dda0b1193a8'
+revision: str = 'f2d813194519'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('password', sa.LargeBinary(), nullable=False),
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('username'),
+    sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')
     )
@@ -35,10 +35,10 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('birth_date', sa.Date(), nullable=True),
     sa.Column('bio', sa.Text(), nullable=True),
-    sa.Column('user_username', sa.String(length=100), nullable=False),
-    sa.ForeignKeyConstraint(['user_username'], ['users.username'], ),
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('user_username')
+    sa.UniqueConstraint('user_id')
     )
     # ### end Alembic commands ###
 
