@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
+from typing import Optional
+
 from src.databases.sql_db import Base
 import uuid
 
@@ -28,8 +30,10 @@ class UserProfile(Base):
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
     )
 
-    birth_date: Mapped[Date] = mapped_column(Date, nullable=True)
-    bio: Mapped[str] = mapped_column(Text, nullable=True)
+    birth_date: Mapped[Date] = mapped_column(Date)
+    bio: Mapped[Optional[str]] = mapped_column(Text)
+    country: Mapped[Optional[str]] = mapped_column(String(50))
+    phone_nuber: Mapped[Optional[str]] = mapped_column(String(50))
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
 

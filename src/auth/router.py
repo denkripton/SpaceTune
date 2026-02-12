@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
-from src.auth.dependencies import get_user_service, get_auth_service, get_current_user
+from src.auth.dependencies import get_user_service, get_current_user
 from src.auth.service import UserService
-from src.auth.schemas import UserCreateSchema, UserLoginSchema
+from src.auth.schemas import UserCreateSchema, UserLoginSchema, ProfileCreationSchema
 
 router = APIRouter(prefix="/users")
 
@@ -16,9 +16,18 @@ async def register_user(
 
 @router.post("/login")
 async def login_user(
-    data: UserLoginSchema, service: UserService = Depends(get_auth_service)
+    data: UserLoginSchema, service: UserService = Depends(get_user_service)
 ):
     return await service.login(data)
+
+
+@router.post("/me/profile/create")
+async def create_my_profile(
+    data: ProfileCreationSchema,
+    service: UserService = Depends(get_user_service),
+    user_id: str = Depends(get_current_user),
+):
+    return await service.create_profile(user_id=user_id, data=data)
 
 
 @router.get("/profile")

@@ -2,7 +2,7 @@ from fastapi import Depends, Request, Response, HTTPException
 from typing import Optional
 
 from src.auth.service import UserService
-from src.auth.repository import UserRepository
+from src.auth.repository import UserRepository, ProfileRepository
 from src.repository import ABCRepository
 from src.dependencies import get_session
 from src.auth.utils.jwt import JWT
@@ -12,20 +12,22 @@ async def get_user_repo(session=Depends(get_session)) -> ABCRepository:
     return UserRepository(session)
 
 
-async def get_user_service(repo: UserRepository = Depends(get_user_repo)):
-    return UserService(repo=repo, jwt=None, response=None)
+async def get_profile_repo(session=Depends(get_session)) -> ABCRepository:
+    return ProfileRepository(session)
 
 
 def get_jwt_service() -> JWT:
     return JWT()
 
 
-async def get_auth_service(
+async def get_user_service(
     response: Response,
-    repo: UserRepository = Depends(get_user_repo),
     jwt: JWT = Depends(get_jwt_service),
+    session=Depends(get_session),
 ):
-    return UserService(response=response, repo=repo, jwt=jwt)
+    repo = UserRepository(session=session)
+    profile_repo = ProfileRepository(session=session)
+    return UserService(response=response, repo=repo, jwt=jwt, profile_repo=profile_repo)
 
 
 async def get_current_user(

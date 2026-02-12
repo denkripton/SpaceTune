@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator, EmailStr, Field
 from datetime import date
+from typing import Optional
 import uuid
 import re
 
@@ -29,7 +30,9 @@ class UserRead(BaseModel):
 
 class ProfileCreationSchema(BaseModel):
     birth_date: date
-    bio: str
+    bio: Optional[str]
+    country: Optional[str] = Field(max_length=50)
+    phone_nuber: Optional[str] = Field(max_length=50, examples=["+380_99_999_9999"])
 
 
 class UserProfileReadSchema(UserRead, ProfileCreationSchema):
