@@ -1,8 +1,8 @@
 from pydantic import BaseModel, field_validator, EmailStr, Field
 from datetime import date
-from typing import Optional
-import uuid
+from typing import Optional, Union
 import re
+import uuid
 
 
 class UserCreateSchema(BaseModel):
@@ -32,10 +32,10 @@ class ProfileCreationSchema(BaseModel):
     birth_date: date
     bio: Optional[str]
     country: Optional[str] = Field(max_length=50)
-    phone_nuber: Optional[str] = Field(max_length=50, examples=["+380_99_999_9999"])
+    phone_number: Optional[str] = Field(max_length=50, examples=["+380_99_999_9999"])
 
 
-class UserProfileReadSchema(UserRead, ProfileCreationSchema):
+class UserProfileReadSchema(ProfileCreationSchema, UserRead):
     pass
 
 

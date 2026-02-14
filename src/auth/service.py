@@ -1,7 +1,12 @@
 from fastapi import Response, HTTPException
 import uuid
 
-from src.auth.schemas import UserCreateSchema, UserLoginSchema, ProfileCreationSchema
+from src.auth.schemas import (
+    UserCreateSchema,
+    UserLoginSchema,
+    ProfileCreationSchema,
+    UserProfileReadSchema,
+)
 from src.auth.repository import UserRepository, ProfileRepository
 from src.auth.utils.jwt import JWT
 from src.auth.utils.hash_generation import pw_manager
@@ -89,3 +94,34 @@ class UserService:
         await self.profile_repo.session.commit()
         await self.profile_repo.session.refresh(profile)
         return profile
+
+    async def _assemble(self, user):
+        existing_profile = await self.profile_repo.get_one(user_id=user.id)
+        if existing_profile is None:
+            raise HTTPException(status_code=422, detail="Profile not found")
+
+        return UserProfileReadSchema(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            birth_date=existing_profile.birth_date,
+            bio=existing_profile.bio,
+            country=existing_profile.country,
+            phone_number=existing_profile.phone_number,
+        )
+
+    async def get_my_profile(self, user_id):
+        existing_user = await self.repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise HTTPException(status_code=422, detail="User does not exist")
+
+        return await self._assemble(user=existing_user)
+
+    async def get_user_profile(self, username):
+        existing_user = await self.repo.get_one(username=username)
+
+        if existing_user is None:
+            raise HTTPException(status_code=422, detail="User does not exist")
+
+        return await self._assemble(user=existing_user)

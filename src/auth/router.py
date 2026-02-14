@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends
 from src.auth.dependencies import get_user_service, get_current_user
 from src.auth.service import UserService
-from src.auth.schemas import UserCreateSchema, UserLoginSchema, ProfileCreationSchema
+from src.auth.schemas import (
+    UserCreateSchema,
+    UserLoginSchema,
+    ProfileCreationSchema,
+    UserProfileReadSchema,
+)
 
-router = APIRouter(prefix="/users")
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("/register")
@@ -30,6 +35,16 @@ async def create_my_profile(
     return await service.create_profile(user_id=user_id, data=data)
 
 
-@router.get("/profile")
-async def profile(user_id: str = Depends(get_current_user)):
-    return {"user_id": user_id}
+@router.get("/me/profile", response_model=UserProfileReadSchema)
+async def get_my_profile(
+    user_id: str = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    return await service.get_my_profile(user_id=user_id)
+
+
+@router.get("/{username}/profile", response_model=UserProfileReadSchema)
+async def get_user_profile(
+    username: str, service: UserService = Depends(get_user_service)
+):
+    return await service.get_user_profile(username=username)

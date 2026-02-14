@@ -33,7 +33,14 @@ class UserProfile(Base):
     birth_date: Mapped[Date] = mapped_column(Date)
     bio: Mapped[Optional[str]] = mapped_column(Text)
     country: Mapped[Optional[str]] = mapped_column(String(50))
-    phone_nuber: Mapped[Optional[str]] = mapped_column(String(50))
+    phone_number: Mapped[Optional[str]] = mapped_column(String(50))
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now, nullable=False
+    )
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
 
