@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from src.auth.dependencies import get_user_service, get_current_user
 from src.auth.service import UserService
 from src.auth.schemas import (
@@ -21,9 +21,20 @@ async def register_user(
 
 @router.post("/login")
 async def login_user(
-    data: UserLoginSchema, service: UserService = Depends(get_user_service)
+    data: UserLoginSchema, response: Response, service: UserService = Depends(get_user_service)
 ):
-    return await service.login(data)
+    user = await service.login(data)
+    
+    response.set_cookie(
+            key="refresh_token",
+            value=user["refresh"],
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,
+        )
+
+    return user
 
 
 @router.post("/me/profile/create")

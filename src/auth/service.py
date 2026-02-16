@@ -18,12 +18,10 @@ class UserService:
         repo: UserRepository,
         profile_repo: ProfileRepository,
         jwt: JWT,
-        response: Response,
     ):
         self.profile_repo = profile_repo
         self.repo = repo
         self.jwt = jwt
-        self.response = response
 
     async def register(self, data: UserCreateSchema):
         data = data.model_dump()
@@ -57,15 +55,6 @@ class UserService:
 
         access = self.jwt.create_access_token(existing_user.id)
         refresh = self.jwt.create_refresh_token(existing_user.id)
-
-        self.response.set_cookie(
-            key="refresh_token",
-            value=refresh,
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=60 * 60 * 24 * 30,
-        )
 
         return {
             "access": access,

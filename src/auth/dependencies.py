@@ -21,13 +21,12 @@ def get_jwt_service() -> JWT:
 
 
 async def get_user_service(
-    response: Response,
     jwt: JWT = Depends(get_jwt_service),
     session=Depends(get_session),
 ):
     repo = UserRepository(session=session)
     profile_repo = ProfileRepository(session=session)
-    return UserService(response=response, repo=repo, jwt=jwt, profile_repo=profile_repo)
+    return UserService(repo=repo, jwt=jwt, profile_repo=profile_repo)
 
 
 async def get_current_user(
