@@ -21,18 +21,20 @@ async def register_user(
 
 @router.post("/login")
 async def login_user(
-    data: UserLoginSchema, response: Response, service: UserService = Depends(get_user_service)
+    data: UserLoginSchema,
+    response: Response,
+    service: UserService = Depends(get_user_service),
 ):
     user = await service.login(data)
-    
+
     response.set_cookie(
-            key="refresh_token",
-            value=user["refresh"],
-            httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=60 * 60 * 24 * 30,
-        )
+        key="refresh_token",
+        value=user["refresh"],
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 30,
+    )
 
     return user
 

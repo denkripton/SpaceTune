@@ -19,6 +19,12 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now,
+        nullable=False,
+    )
 
     profile: Mapped["UserProfile"] = relationship(back_populates="user")
 
@@ -39,7 +45,10 @@ class UserProfile(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now, nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now,
+        nullable=False,
     )
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)

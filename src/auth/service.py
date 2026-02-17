@@ -1,4 +1,4 @@
-from fastapi import Response, HTTPException
+from fastapi import HTTPException
 import uuid
 
 from src.auth.schemas import (
