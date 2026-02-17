@@ -6,6 +6,7 @@ from src.auth.schemas import (
     UserLoginSchema,
     ProfileCreationSchema,
     UserProfileReadSchema,
+    UserUpdateSchema,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -61,3 +62,12 @@ async def get_user_profile(
     username: str, service: UserService = Depends(get_user_service)
 ):
     return await service.get_user_profile(username=username)
+
+
+@router.patch("/me/update")
+async def update_me(
+    data: UserUpdateSchema,
+    user_id: str = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    return await service.update_username(user_id=user_id, data=data)

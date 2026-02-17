@@ -6,6 +6,7 @@ from src.auth.schemas import (
     UserLoginSchema,
     ProfileCreationSchema,
     UserProfileReadSchema,
+    UserUpdateSchema,
 )
 from src.auth.repository import UserRepository, ProfileRepository
 from src.auth.utils.jwt import JWT
@@ -114,3 +115,25 @@ class UserService:
             raise HTTPException(status_code=422, detail="User does not exist")
 
         return await self._assemble(user=existing_user)
+
+    async def update_username(self, user_id, data: UserUpdateSchema):
+        existing_user = await self.repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise HTTPException(status_code=422, detail="User does not exist")
+
+        password_check = pw_manager.check_password(
+            data.password, existing_user.password
+        )
+
+        if password_check is False:
+            raise HTTPException(status_code=422, detail="Incorrect password")
+        
+        data = data.model_dump(exclude={"password"}, exclude_none=True, exclude_unset=True)
+
+        existing_user.username = data["username"]
+        
+        await self.repo.session.commit()
+        await self.repo.session.refresh(existing_user)
+        return existing_user
+    

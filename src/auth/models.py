@@ -22,7 +22,7 @@ class User(Base):
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now,
+        server_onupdate=func.now(),
         nullable=False,
     )
 
@@ -47,7 +47,7 @@ class UserProfile(Base):
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now,
+        server_onupdate=func.now(),
         nullable=False,
     )
 
