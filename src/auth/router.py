@@ -60,7 +60,7 @@ async def get_my_profile(
     return await service.get_my_profile(user_id=user_id)
 
 
-@user_router.get("/{username}/profile", response_model=UserProfileReadSchema)
+@user_router.get("/{username}/profile", response_model=Union[UserProfileReadSchema, UserRead])
 async def get_user_profile(
     username: str, service: UserService = Depends(get_user_service)
 ):
