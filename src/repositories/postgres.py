@@ -30,3 +30,8 @@ class SQLAlchemyRepository(ABCRepository):
         obj = self.model(**kwargs)
         self.session.add(obj)
         return obj
+
+    async def delete_obj(self, id: uuid.UUID):
+        obj = await self.get_one(id=id)
+        await self.session.delete(obj)
+        return obj

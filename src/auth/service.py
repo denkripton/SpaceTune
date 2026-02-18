@@ -7,6 +7,7 @@ from src.auth.schemas import (
     ProfileCreationSchema,
     UserProfileReadSchema,
     UserUpdateSchema,
+    UserRead,
 )
 from src.auth.repository import UserRepository, ProfileRepository
 from src.auth.utils.jwt import JWT
@@ -88,7 +89,11 @@ class UserService:
     async def _assemble(self, user):
         existing_profile = await self.profile_repo.get_one(user_id=user.id)
         if existing_profile is None:
-            raise HTTPException(status_code=422, detail="Profile not found")
+            return UserRead(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+            )
 
         return UserProfileReadSchema(
             id=user.id,
@@ -128,12 +133,29 @@ class UserService:
 
         if password_check is False:
             raise HTTPException(status_code=422, detail="Incorrect password")
-        
-        data = data.model_dump(exclude={"password"}, exclude_none=True, exclude_unset=True)
+
+        data = data.model_dump(
+            exclude={"password"}, exclude_none=True, exclude_unset=True
+        )
 
         existing_user.username = data["username"]
-        
+
         await self.repo.session.commit()
         await self.repo.session.refresh(existing_user)
         return existing_user
-    
+
+    async def delete_profile(self, user_id, password):
+        existing_user = await self.repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise HTTPException(status_code=422, detail="User does not exist")
+
+        password_check = pw_manager.check_password(password, existing_user.password)
+
+        if password_check is False:
+            raise HTTPException(status_code=422, detail="Incorrect password")
+
+        existing_profile = await self.profile_repo.get_one(user_id=existing_user.id)
+        await self.profile_repo.delete_obj(existing_profile.id)
+        await self.profile_repo.session.commit()
+        return "Profile has been deleted succesfuly"

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, Response
+from typing import Union
+
 from src.auth.dependencies import get_user_service, get_current_user
 from src.auth.service import UserService
 from src.auth.schemas import (
@@ -7,6 +9,7 @@ from src.auth.schemas import (
     ProfileCreationSchema,
     UserProfileReadSchema,
     UserUpdateSchema,
+    UserRead,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -49,7 +52,7 @@ async def create_my_profile(
     return await service.create_profile(user_id=user_id, data=data)
 
 
-@router.get("/me/profile", response_model=UserProfileReadSchema)
+@router.get("/me/profile", response_model=Union[UserProfileReadSchema, UserRead])
 async def get_my_profile(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
@@ -71,3 +74,12 @@ async def update_me(
     service: UserService = Depends(get_user_service),
 ):
     return await service.update_username(user_id=user_id, data=data)
+
+
+@router.delete("/me/profile/delete")
+async def delete_my_profile(
+    password: str,
+    user_id: str = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    return await service.delete_profile(user_id=user_id, password=password)
