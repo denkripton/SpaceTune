@@ -12,10 +12,10 @@ from src.auth.schemas import (
     UserRead,
 )
 
-router = APIRouter(prefix="/users", tags=["Users"])
+user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/register")
+@user_router.post("/register")
 async def register_user(
     data: UserCreateSchema,
     service: UserService = Depends(get_user_service),
@@ -23,7 +23,7 @@ async def register_user(
     return await service.register(data)
 
 
-@router.post("/login")
+@user_router.post("/login")
 async def login_user(
     data: UserLoginSchema,
     response: Response,
@@ -43,7 +43,7 @@ async def login_user(
     return user
 
 
-@router.post("/me/profile/create")
+@user_router.post("/me/profile/create")
 async def create_my_profile(
     data: ProfileCreationSchema,
     service: UserService = Depends(get_user_service),
@@ -52,7 +52,7 @@ async def create_my_profile(
     return await service.create_profile(user_id=user_id, data=data)
 
 
-@router.get("/me/profile", response_model=Union[UserProfileReadSchema, UserRead])
+@user_router.get("/me/profile", response_model=Union[UserProfileReadSchema, UserRead])
 async def get_my_profile(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
@@ -60,14 +60,14 @@ async def get_my_profile(
     return await service.get_my_profile(user_id=user_id)
 
 
-@router.get("/{username}/profile", response_model=UserProfileReadSchema)
+@user_router.get("/{username}/profile", response_model=UserProfileReadSchema)
 async def get_user_profile(
     username: str, service: UserService = Depends(get_user_service)
 ):
     return await service.get_user_profile(username=username)
 
 
-@router.patch("/me/update")
+@user_router.patch("/me/update")
 async def update_me(
     data: UserUpdateSchema,
     user_id: str = Depends(get_current_user),
@@ -76,7 +76,7 @@ async def update_me(
     return await service.update_username(user_id=user_id, data=data)
 
 
-@router.delete("/me/profile/delete")
+@user_router.delete("/me/profile/delete")
 async def delete_my_profile(
     password: str,
     user_id: str = Depends(get_current_user),
