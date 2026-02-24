@@ -8,3 +8,5 @@ AWS_ACCESS = os.getenv("AWS_ACCESS")
 AWS_REGION = os.getenv("AWS_REGION")
 
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+
+PRESIGNED_URL_EXP = 60 * 10
