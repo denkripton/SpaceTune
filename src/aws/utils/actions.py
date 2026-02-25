@@ -6,7 +6,7 @@ class S3Bucket:
     def __init__(self):
         self.client = s3_client()
 
-    def upload_file(self, file_type, file_name, key):
+    def upload_file(self, file_type: str, file_name: str, key: str) -> str:
         last_key = key
 
         self.client.upload_file(
@@ -17,10 +17,10 @@ class S3Bucket:
         )
         return last_key
 
-    def delete_file(self, key):
+    def delete_file(self, key: str):
         self.client.delete_object(Bucket=BUCKET_NAME, Key=key)
 
-    def presigned_url(self, key):
+    def presigned_url(self, key: str) -> str:
         url = self.client.generate_presigned_url(
             ClientMethod="get_object",
             Params={"Bucket": BUCKET_NAME, "Key": key},
