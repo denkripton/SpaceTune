@@ -1,11 +1,11 @@
 from fastapi import Depends, Request, Response, HTTPException
 from typing import Optional
 
-from src.auth.service import UserService
-from src.auth.repository import UserRepository, ProfileRepository
+from src.modules.auth.service import UserService
+from src.modules.auth.repository import UserRepository, ProfileRepository
 from src.repository import ABCRepository
 from src.dependencies import get_session
-from src.auth.utils.jwt import JWT
+from src.modules.auth.utils.jwt import JWT
 
 
 async def get_user_repo(session=Depends(get_session)) -> ABCRepository:

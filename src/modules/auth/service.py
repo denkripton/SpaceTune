@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import uuid
 
-from src.auth.schemas import (
+from src.modules.auth.schemas import (
     UserCreateSchema,
     UserLoginSchema,
     ProfileCreationSchema,
@@ -9,9 +9,9 @@ from src.auth.schemas import (
     UserUpdateSchema,
     UserRead,
 )
-from src.auth.repository import UserRepository, ProfileRepository
-from src.auth.utils.jwt import JWT
-from src.auth.utils.hash_generation import pw_manager
+from src.modules.auth.repository import UserRepository, ProfileRepository
+from src.modules.auth.utils.jwt import JWT
+from src.modules.auth.utils.hash_generation import pw_manager
 
 
 class UserService:

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Response
 from typing import Union
 
-from src.auth.dependencies import get_user_service, get_current_user
-from src.auth.service import UserService
-from src.auth.schemas import (
+from src.modules.auth.dependencies import get_user_service, get_current_user
+from src.modules.auth.service import UserService
+from src.modules.auth.schemas import (
     UserCreateSchema,
     UserLoginSchema,
     ProfileCreationSchema,
@@ -60,7 +60,9 @@ async def get_my_profile(
     return await service.get_my_profile(user_id=user_id)
 
 
-@user_router.get("/{username}/profile", response_model=Union[UserProfileReadSchema, UserRead])
+@user_router.get(
+    "/{username}/profile", response_model=Union[UserProfileReadSchema, UserRead]
+)
 async def get_user_profile(
     username: str, service: UserService = Depends(get_user_service)
 ):
