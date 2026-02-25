@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, UTC
 from jwt import encode, decode
 from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidSubjectError
 
-from src.auth.config import JWT_SECRET
+from src.modules.auth.config import JWT_SECRET
 
 
 class JWT:

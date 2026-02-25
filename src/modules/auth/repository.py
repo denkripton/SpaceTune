@@ -1,7 +1,7 @@
 import uuid
 
 from src.repositories.postgres import SQLAlchemyRepository
-from src.auth.models import User, UserProfile
+from src.modules.auth.models import User, UserProfile
 
 
 class UserRepository(SQLAlchemyRepository):
