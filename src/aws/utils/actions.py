@@ -3,7 +3,8 @@ from src.aws.config import BUCKET_NAME, PRESIGNED_URL_EXP
 
 
 class S3Bucket:
-    client = s3_client()
+    def __init__(self):
+        self.client = s3_client()
 
     def upload_file(self, file_type, file_name, key):
         last_key = key
