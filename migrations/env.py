@@ -4,7 +4,9 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from src.databases.sql_db import Base
 from src.config import SQLALCHEMY_DATABASE_URL
-from src.auth.models import User
+from src.modules.auth.models import UserProfile, User
+from src.modules.music.models import Rate, Track
+
 
 
 
