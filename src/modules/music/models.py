@@ -4,12 +4,9 @@ from sqlalchemy import (
     String,
     UUID,
     DateTime,
-    Date,
-    Text,
     func,
     ForeignKey,
     BigInteger,
-    JSON,
 )
 from typing import Optional, List
 
@@ -53,7 +50,7 @@ class Track(Base):
     duration: Mapped[int] = mapped_column(BigInteger)
     artists: Mapped[List[str]] = mapped_column(postgresql.ARRAY(String()))
     track_url: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    photo_url: Mapped[str] = mapped_column(String(100), unique=True)
+    photo_url: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -68,7 +65,7 @@ class Track(Base):
     track_rates_conn: Mapped[List["Rate"]] = relationship(back_populates="track_conn")
 
     
-    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
 
     owner: Mapped["User"] = relationship(back_populates="track")
 
