@@ -11,6 +11,7 @@ dependencies = [
     "boto3[crt]>=1.42.52",
     "datetime>=6.0",
     "fastapi>=0.128.0",
+    "ffmpeg-python>=0.2.0",
     "httpx>=0.28.1",
     "mako==1.3.10",
     "markupsafe==3.0.3",
@@ -19,6 +20,7 @@ dependencies = [
     "pyjwt>=2.11.0",
     "pytest>=9.0.2",
     "python-dotenv>=1.2.1",
+    "python-multipart>=0.0.22",
     "sqlalchemy>=2.0.46",
     "uvicorn==0.38.0",
 ]
