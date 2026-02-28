@@ -22,3 +22,13 @@ async def add_track(
     return await service.create_track(
         user_id=user_id, data=data, music_file=music_file, image_file=image_file
     )
+
+
+@music_router.delete("/track/delete")
+async def track_delete(
+    track_name: str,
+    password: str,
+    user_id: str = Depends(get_current_user),
+    service: TrackService = Depends(get_track_service),
+):
+    return await service.delete_track(user_id=user_id, password=password, track_name=track_name)
