@@ -11,8 +11,8 @@ import uuid
 
 class TrackService:
     def __init__(self, track_repo: TrackRepository, user_repo: UserRepository):
-        self.track_repo = track_repo
-        self.user_repo = user_repo
+        self.__track_repo = track_repo
+        self.__user_repo = user_repo
 
     async def create_track(
         self, user_id: str, data: TrackCreationSchema, music_file, image_file
@@ -21,7 +21,7 @@ class TrackService:
         track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
         image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
         data = data.model_dump()
-        existing_user = await self.user_repo.get_by_id(id=user_id)
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise HTTPException(status_code=422, detail="User does not exist")
@@ -40,9 +40,9 @@ class TrackService:
             file_type=image_file.content_type,
             key=image_aws_key,
         )
-        track = await self.track_repo.create(**data)
-        await self.track_repo.session.commit()
-        await self.track_repo.session.refresh(track)
+        track = await self.__track_repo.create(**data)
+        await self.__track_repo.session.commit()
+        await self.__track_repo.session.refresh(track)
 
         bucket_manager.upload_file(
             file=music_file.file,
@@ -57,7 +57,7 @@ class TrackService:
         return track
 
     async def delete_track(self, user_id, password, track_name):
-        existing_user = await self.user_repo.get_by_id(id=user_id)
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise HTTPException(status_code=422, detail="User does not exist")
@@ -67,7 +67,7 @@ class TrackService:
         if password_check is False:
             raise HTTPException(status_code=422, detail="Incorrect password")
 
-        existing_track = await self.track_repo.get_one(
+        existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=track_name
         )
         if existing_track is None:
@@ -76,9 +76,9 @@ class TrackService:
         bucket_manager.delete_file(key=existing_track.photo_url)
 
         try:
-            await self.track_repo.delete_obj(id=existing_track.id)
-            await self.track_repo.session.commit()
+            await self.__track_repo.delete_obj(id=existing_track.id)
+            await self.__track_repo.session.commit()
         except Exception as e:
-            await self.track_repo.session.rollback()
+            await self.__track_repo.session.rollback()
             print(e)
         return "Track has been deleted succesfuly"
