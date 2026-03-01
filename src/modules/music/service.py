@@ -76,3 +76,13 @@ class TrackService:
             await self.__track_repo.session.rollback()
             print(e)
         return "Track has been deleted succesfuly"
+
+    async def get_track(self, track_name):
+
+        existing_track = await self.__track_repo.get_one(name=track_name)
+        if existing_track is None:
+            raise HTTPException(status_code=422, detail="Track does not exist")
+
+        track = bucket_manager.presigned_url(key=existing_track.track_url)
+        photo = bucket_manager.presigned_url(key=existing_track.photo_url)
+        return {"metadata": existing_track, "audio": track, "image": photo}

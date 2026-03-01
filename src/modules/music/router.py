@@ -9,6 +9,13 @@ from src.modules.music.schemas import TrackCreationSchema, TrackReadSchema
 music_router = APIRouter(prefix="/music", tags=["Music"])
 
 
+@music_router.get("/track/{track_name}")
+async def track_get(
+    track_name: str, service: TrackService = Depends(get_track_service)
+):
+    return await service.get_track(track_name=track_name)
+
+
 @music_router.post("/track/add", response_model=TrackReadSchema)
 async def add_track(
     name: str = Form(),
@@ -31,4 +38,6 @@ async def track_delete(
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
 ):
-    return await service.delete_track(user_id=user_id, password=password, track_name=track_name)
+    return await service.delete_track(
+        user_id=user_id, password=password, track_name=track_name
+    )
