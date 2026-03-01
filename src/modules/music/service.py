@@ -30,19 +30,13 @@ class TrackService:
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
-        bucket_manager.upload_file(
-            file=music_file.file,
-            file_type=music_file.content_type,
-            key=track_aws_key,
-        )
-        bucket_manager.upload_file(
-            file=image_file.file,
-            file_type=image_file.content_type,
-            key=image_aws_key,
-        )
-        track = await self.__track_repo.create(**data)
-        await self.__track_repo.session.commit()
-        await self.__track_repo.session.refresh(track)
+        try:
+            track = await self.__track_repo.create(**data)
+            await self.__track_repo.session.commit()
+            await self.__track_repo.session.refresh(track)
+        except Exception as e:
+            await self.__track_repo.session.rollback()
+            print(e)
 
         bucket_manager.upload_file(
             file=music_file.file,
