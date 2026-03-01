@@ -12,3 +12,4 @@ async def count_duration(file):
         return int(float(probe["format"]["duration"])) * 1000
     finally:
         os.unlink(tmp_path)
+        await file.seek(0)
