@@ -22,6 +22,18 @@ class SQLAlchemyRepository(ABCRepository):
         data = await self.session.execute(query)
         obj = data.scalars().first()
         return obj
+    
+    async def get_many(self, skip: int = 0, limit: int = 10, **kwargs):
+        conditions = []
+
+        for key, value in kwargs.items():
+            if value is not None:
+                conditions.append(getattr(self.model, key) == value)
+
+        query = select(self.model).where(*conditions).offset(skip).limit(limit)
+        data = await self.session.execute(query)
+        objs = data.scalars().all()
+        return objs
 
     async def get_by_id(self, id: uuid.UUID):
         return await self.get_one(id=id)

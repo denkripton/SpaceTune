@@ -1,6 +1,10 @@
 from src.modules.music.repository import TrackRepository
 from src.modules.auth.repository import UserRepository
-from src.modules.music.schemas import TrackCreationSchema
+from src.modules.music.schemas import (
+    TrackCreationSchema,
+    TrackMetadataReadShema,
+    TrackReadSchema,
+)
 from src.aws.utils.actions import bucket_manager
 from src.modules.music.utils.duration import count_duration
 from src.modules.auth.utils.hash_generation import pw_manager
@@ -30,19 +34,13 @@ class TrackService:
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
-        bucket_manager.upload_file(
-            file=music_file.file,
-            file_type=music_file.content_type,
-            key=track_aws_key,
-        )
-        bucket_manager.upload_file(
-            file=image_file.file,
-            file_type=image_file.content_type,
-            key=image_aws_key,
-        )
-        track = await self.__track_repo.create(**data)
-        await self.__track_repo.session.commit()
-        await self.__track_repo.session.refresh(track)
+        try:
+            track = await self.__track_repo.create(**data)
+            await self.__track_repo.session.commit()
+            await self.__track_repo.session.refresh(track)
+        except Exception as e:
+            await self.__track_repo.session.rollback()
+            print(e)
 
         bucket_manager.upload_file(
             file=music_file.file,
@@ -82,3 +80,37 @@ class TrackService:
             await self.__track_repo.session.rollback()
             print(e)
         return "Track has been deleted succesfuly"
+
+    async def get_track(self, track_name):
+
+        existing_track = await self.__track_repo.get_one(name=track_name)
+        if existing_track is None:
+            raise HTTPException(status_code=422, detail="Track does not exist")
+
+        track = bucket_manager.presigned_url(key=existing_track.track_url)
+        photo = bucket_manager.presigned_url(key=existing_track.photo_url)
+        return {"metadata": existing_track, "audio": track, "image": photo}
+
+    async def get_my_tracks(self, user_id):
+
+        tracks = await self.__track_repo.get_many(owner_id=user_id)
+        list_to_return = []
+
+        # It looks terrible, but now I can't find any other solution
+        for track in tracks:
+            audio = bucket_manager.presigned_url(key=track.track_url)
+            image = bucket_manager.presigned_url(key=track.photo_url)
+            list_to_return.append(
+                TrackMetadataReadShema(
+                    metadata=TrackReadSchema(
+                        id=track.id,
+                        name=track.name,
+                        artists=track.artists,
+                        duration=track.duration,
+                    ),
+                    audio=audio,
+                    image=image,
+                )
+            )
+
+        return list_to_return

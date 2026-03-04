@@ -8,10 +8,14 @@ import uuid
 class TrackCreationSchema(BaseModel):
     name: str = Field(min_length=1, max_length=50, default="baobab")
     artists: list[str]
-    
 
 
 class TrackReadSchema(TrackCreationSchema):
     id: uuid.UUID
     duration: int
 
+
+class TrackMetadataReadShema(BaseModel):
+    metadata: TrackReadSchema
+    audio: str
+    image: str
