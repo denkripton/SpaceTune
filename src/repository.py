@@ -11,5 +11,9 @@ class ABCRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_many():
+        pass
+
+    @abstractmethod
     async def delete_obj():
         pass
