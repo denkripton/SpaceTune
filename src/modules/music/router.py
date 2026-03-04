@@ -4,12 +4,12 @@ from typing import Union, Annotated
 from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service
 from src.modules.auth.dependencies import get_current_user
-from src.modules.music.schemas import TrackCreationSchema, TrackReadSchema
+from src.modules.music.schemas import TrackCreationSchema, TrackReadSchema, TrackMetadataReadShema
 
 music_router = APIRouter(prefix="/music", tags=["Music"])
 
 
-@music_router.get("/track/{track_name}")
+@music_router.get("/track/{track_name}", response_model=TrackMetadataReadShema)
 async def track_get(
     track_name: str, service: TrackService = Depends(get_track_service)
 ):
