@@ -9,7 +9,7 @@ async def count_duration(file):
         tmp_path = tmp.name
     try:
         probe = ffmpeg.probe(tmp_path)
-        return int(float(probe["format"]["duration"])) * 1000
+        return float(probe["format"]["duration"]) * 1000
     finally:
         os.unlink(tmp_path)
         await file.seek(0)
