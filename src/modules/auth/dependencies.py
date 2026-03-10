@@ -3,30 +3,28 @@ from typing import Optional
 
 from src.modules.auth.service import UserService
 from src.modules.auth.repository import UserRepository, ProfileRepository
-from src.repository import ABCRepository
-from src.dependencies import get_session
+from src.dependencies import RepoFactory
 from src.modules.auth.utils.jwt import JWT
 
 
-async def get_user_repo(session=Depends(get_session)) -> ABCRepository:
-    return UserRepository(session)
-
-
-async def get_profile_repo(session=Depends(get_session)) -> ABCRepository:
-    return ProfileRepository(session)
+user_repository = RepoFactory(repo=UserRepository)
+profile_repository = RepoFactory(repo=ProfileRepository)
 
 
 def get_jwt_service() -> JWT:
     return JWT()
 
 
-async def get_user_service(
-    jwt: JWT = Depends(get_jwt_service),
-    session=Depends(get_session),
-):
-    repo = UserRepository(session=session)
-    profile_repo = ProfileRepository(session=session)
-    return UserService(repo=repo, jwt=jwt, profile_repo=profile_repo)
+class UserServiceFactory:
+    def __call__(
+        self,
+        user_repo: UserRepository = Depends(user_repository),
+        profile_repo: ProfileRepository = Depends(profile_repository),
+        jwt: JWT = Depends(get_jwt_service),
+    ):
+        return UserService(repo=user_repo, profile_repo=profile_repo, jwt=jwt)
+    
+get_user_service = UserServiceFactory()
 
 
 async def get_current_user(

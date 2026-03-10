@@ -1,4 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
+
 from src.databases.sql_db import AsyncSessionLocal
 
 async def get_session() -> AsyncSession:
@@ -7,3 +9,11 @@ async def get_session() -> AsyncSession:
             yield session
         finally:
             await session.close()
+
+
+class RepoFactory:
+    def __init__(self, repo):
+        self.repository_class = repo
+
+    def __call__(self, session: AsyncSession = Depends(get_session)):
+        return self.repository_class(session)
