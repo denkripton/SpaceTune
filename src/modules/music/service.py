@@ -6,6 +6,7 @@ from src.modules.music.schemas import (
     TrackReadSchema,
 )
 from src.aws.utils.actions import bucket_manager
+from src.modules.music.config import logger
 from src.modules.music.utils.duration import count_duration
 from src.modules.auth.utils.hash_generation import pw_manager
 
@@ -40,7 +41,7 @@ class TrackService:
             await self.__track_repo.session.refresh(track)
         except Exception as e:
             await self.__track_repo.session.rollback()
-            print(e)
+            logger.warning(e)
 
         bucket_manager.upload_file(
             file=music_file.file,
@@ -78,7 +79,7 @@ class TrackService:
             await self.__track_repo.session.commit()
         except Exception as e:
             await self.__track_repo.session.rollback()
-            print(e)
+            logger.warning(e)
         return "Track has been deleted succesfuly"
 
     async def get_track(self, track_name):
