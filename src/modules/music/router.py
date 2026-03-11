@@ -3,8 +3,13 @@ from typing import Union, Annotated, List
 
 from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service
+from src.dependencies import get_error
 from src.modules.auth.dependencies import get_current_user
-from src.modules.music.schemas import TrackCreationSchema, TrackReadSchema, TrackMetadataReadShema
+from src.modules.music.schemas import (
+    TrackCreationSchema,
+    TrackReadSchema,
+    TrackMetadataReadShema,
+)
 
 music_router = APIRouter(prefix="/music", tags=["Music"])
 
@@ -13,14 +18,15 @@ music_router = APIRouter(prefix="/music", tags=["Music"])
 async def track_get(
     track_name: str, service: TrackService = Depends(get_track_service)
 ):
-    return await service.get_track(track_name=track_name)
+    return await get_error(service.get_track, track_name=track_name)
 
 
 @music_router.get("/tracks/my", response_model=list[TrackMetadataReadShema])
 async def my_tracks_get(
-    user_id: str = Depends(get_current_user), service: TrackService = Depends(get_track_service)
+    user_id: str = Depends(get_current_user),
+    service: TrackService = Depends(get_track_service),
 ):
-    return await service.get_my_tracks(user_id=user_id)
+    return await get_error(service.get_my_tracks, user_id=user_id)
 
 
 @music_router.post("/track/add", response_model=TrackReadSchema)
@@ -33,8 +39,12 @@ async def add_track(
     service: TrackService = Depends(get_track_service),
 ):
     data = TrackCreationSchema(name=name, artists=artists)
-    return await service.create_track(
-        user_id=user_id, data=data, music_file=music_file, image_file=image_file
+    return await get_error(
+        service.create_track,
+        user_id=user_id,
+        data=data,
+        music_file=music_file,
+        image_file=image_file,
     )
 
 
@@ -45,6 +55,6 @@ async def track_delete(
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
 ):
-    return await service.delete_track(
-        user_id=user_id, password=password, track_name=track_name
+    return await get_error(
+        service.delete_track, user_id=user_id, password=password, track_name=track_name
     )

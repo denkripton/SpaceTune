@@ -17,7 +17,9 @@ class TrackServiceFactory:
         track_repo: TrackRepository = Depends(track_repository),
         user_repo: UserRepository = Depends(user_repository),
     ):
-        return TrackService(track_repo=track_repo, user_repo=user_repo)
+
+        service = TrackService(track_repo=track_repo, user_repo=user_repo)
+        return service
 
 
 get_track_service = TrackServiceFactory()

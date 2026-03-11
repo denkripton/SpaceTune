@@ -9,8 +9,8 @@ from src.aws.utils.actions import bucket_manager
 from src.modules.music.config import logger
 from src.modules.music.utils.duration import count_duration
 from src.modules.auth.utils.hash_generation import pw_manager
+from src.exceptions import Error
 
-from fastapi import HTTPException
 import uuid
 
 
@@ -29,7 +29,8 @@ class TrackService:
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
+
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
         data["owner_id"] = user_id
@@ -59,18 +60,18 @@ class TrackService:
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         password_check = pw_manager.check_password(password, existing_user.password)
 
         if password_check is False:
-            raise HTTPException(status_code=422, detail="Incorrect password")
+            raise Error(code=403, msg="Incorrect password")
 
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=track_name
         )
         if existing_track is None:
-            raise HTTPException(status_code=422, detail="Track does not exist")
+            raise Error(code=422, msg="Track does not exist")
         bucket_manager.delete_file(key=existing_track.track_url)
         bucket_manager.delete_file(key=existing_track.photo_url)
 
@@ -86,7 +87,7 @@ class TrackService:
 
         existing_track = await self.__track_repo.get_one(name=track_name)
         if existing_track is None:
-            raise HTTPException(status_code=422, detail="Track does not exist")
+            raise Error(code=422, msg="Track does not exist")
 
         track = bucket_manager.presigned_url(key=existing_track.track_url)
         photo = bucket_manager.presigned_url(key=existing_track.photo_url)
