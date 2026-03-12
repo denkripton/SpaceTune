@@ -30,6 +30,13 @@ class TrackService:
 
         if existing_user is None:
             raise Error(code=422, msg="User does not exist")
+        
+        existing_track = await self.__track_repo.get_one(
+            owner_id=user_id, name=data["name"]
+        )
+
+        if existing_track is not None:
+            raise Error(code=422, msg="Track already exist")
 
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
