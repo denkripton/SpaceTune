@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
 
@@ -12,3 +13,8 @@ db_port = os.getenv("DB_PORT")
 SQLALCHEMY_DATABASE_URL = (
     f"postgresql+asyncpg://{pg_user}:{pg_password}@{db_host}:{db_port}/{db_name}"
 )
+
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
