@@ -16,7 +16,7 @@ from src.modules.auth.schemas import (
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@user_router.post("/register")
+@user_router.post("/register", response_model=UserRead)
 async def register_user(
     data: UserCreateSchema,
     service: UserService = Depends(get_user_service),
@@ -44,7 +44,7 @@ async def login_user(
     return user
 
 
-@user_router.post("/me/profile/create")
+@user_router.post("/me/profile/create", response_model=ProfileCreationSchema)
 async def create_my_profile(
     data: ProfileCreationSchema,
     service: UserService = Depends(get_user_service),
@@ -70,7 +70,7 @@ async def get_user_profile(
     return await get_error(service.get_user_profile, username=username)
 
 
-@user_router.patch("/me/update")
+@user_router.patch("/me/update", response_model=Union[UserProfileReadSchema, UserRead])
 async def update_me(
     data: UserUpdateSchema,
     user_id: str = Depends(get_current_user),
