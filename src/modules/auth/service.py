@@ -156,6 +156,10 @@ class UserService:
             raise Error(code=403, msg="Incorrect password")
 
         existing_profile = await self.profile_repo.get_one(user_id=existing_user.id)
+
+        if existing_profile is None:
+            raise Error(code=422, msg="Profile does not exist")
+
         await self.profile_repo.delete_obj(existing_profile.id)
         await self.profile_repo.session.commit()
         return "Profile has been deleted succesfuly"
