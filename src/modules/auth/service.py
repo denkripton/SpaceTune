@@ -142,7 +142,7 @@ class UserService:
 
         await self.repo.session.commit()
         await self.repo.session.refresh(existing_user)
-        return existing_user
+        return await self._assemble(user=existing_user)
 
     async def delete_profile(self, user_id, password):
         existing_user = await self.repo.get_by_id(id=user_id)
