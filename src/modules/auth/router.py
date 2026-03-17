@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 from typing import Union
 
+from src.dependencies import get_error
 from src.modules.auth.dependencies import get_user_service, get_current_user
 from src.modules.auth.service import UserService
 from src.modules.auth.schemas import (
@@ -20,7 +21,7 @@ async def register_user(
     data: UserCreateSchema,
     service: UserService = Depends(get_user_service),
 ):
-    return await service.register(data)
+    return await get_error(service.register, data=data)
 
 
 @user_router.post("/login")
@@ -29,7 +30,7 @@ async def login_user(
     response: Response,
     service: UserService = Depends(get_user_service),
 ):
-    user = await service.login(data)
+    user = await get_error(service.login, data=data)
 
     response.set_cookie(
         key="refresh_token",
@@ -49,7 +50,7 @@ async def create_my_profile(
     service: UserService = Depends(get_user_service),
     user_id: str = Depends(get_current_user),
 ):
-    return await service.create_profile(user_id=user_id, data=data)
+    return await get_error(service.create_profile, user_id=user_id, data=data)
 
 
 @user_router.get("/me/profile", response_model=Union[UserProfileReadSchema, UserRead])
@@ -57,7 +58,7 @@ async def get_my_profile(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await service.get_my_profile(user_id=user_id)
+    return await get_error(service.get_my_profile, user_id=user_id)
 
 
 @user_router.get(
@@ -66,7 +67,7 @@ async def get_my_profile(
 async def get_user_profile(
     username: str, service: UserService = Depends(get_user_service)
 ):
-    return await service.get_user_profile(username=username)
+    return await get_error(service.get_user_profile, username=username)
 
 
 @user_router.patch("/me/update")
@@ -75,7 +76,7 @@ async def update_me(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await service.update_username(user_id=user_id, data=data)
+    return await get_error(service.update_username, user_id=user_id, data=data)
 
 
 @user_router.delete("/me/profile/delete")
@@ -84,4 +85,4 @@ async def delete_my_profile(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await service.delete_profile(user_id=user_id, password=password)
+    return await get_error(service.delete_profile, user_id=user_id, password=password)

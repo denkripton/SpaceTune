@@ -1,6 +1,6 @@
-from fastapi import HTTPException
 import uuid
 
+from src.exceptions import Error
 from src.modules.auth.schemas import (
     UserCreateSchema,
     UserLoginSchema,
@@ -31,7 +31,7 @@ class UserService:
         existing_user = await self.repo.get_by_email(data["email"])
 
         if existing_user is not None:
-            raise HTTPException(status_code=422, detail="User already exists")
+            raise Error(code=422, msg="User already exists")
 
         data["password"] = pw_manager.hash_password(data["password"])
 
@@ -45,7 +45,7 @@ class UserService:
         existing_user = await self.repo.get_by_email(data.email)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         password_check = pw_manager.check_password(
             data.password, existing_user.password
@@ -53,7 +53,7 @@ class UserService:
         existing_user.id = str(existing_user.id)
 
         if password_check is False:
-            raise HTTPException(status_code=422, detail="Incorrect password")
+            raise Error(code=403, msg="Incorrect password")
 
         access = self.jwt.create_access_token(existing_user.id)
         refresh = self.jwt.create_refresh_token(existing_user.id)
@@ -72,12 +72,12 @@ class UserService:
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         existing_profile = await self.profile_repo.get_user_by_id(user_id)
 
         if existing_profile is not None:
-            raise HTTPException(status_code=422, detail="Profile already created")
+            raise Error(code=422, msg="Profile already created")
 
         data["user_id"] = user_id
         profile = await self.profile_repo.create(**data)
@@ -109,7 +109,7 @@ class UserService:
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         return await self._assemble(user=existing_user)
 
@@ -117,7 +117,7 @@ class UserService:
         existing_user = await self.repo.get_one(username=username)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=403, msg="User does not exist")
 
         return await self._assemble(user=existing_user)
 
@@ -125,14 +125,14 @@ class UserService:
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         password_check = pw_manager.check_password(
             data.password, existing_user.password
         )
 
         if password_check is False:
-            raise HTTPException(status_code=422, detail="Incorrect password")
+            raise Error(code=403, msg="Incorrect password")
 
         data = data.model_dump(
             exclude={"password"}, exclude_none=True, exclude_unset=True
@@ -148,12 +148,12 @@ class UserService:
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise HTTPException(status_code=422, detail="User does not exist")
+            raise Error(code=422, msg="User does not exist")
 
         password_check = pw_manager.check_password(password, existing_user.password)
 
         if password_check is False:
-            raise HTTPException(status_code=422, detail="Incorrect password")
+            raise Error(code=403, msg="Incorrect password")
 
         existing_profile = await self.profile_repo.get_one(user_id=existing_user.id)
         await self.profile_repo.delete_obj(existing_profile.id)
