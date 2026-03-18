@@ -30,7 +30,7 @@ class TrackService:
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-        
+
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=data["name"]
         )
@@ -40,6 +40,12 @@ class TrackService:
 
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
+        result_artists = [existing_user.username]
+
+        for artist in data["artists"]:
+            result_artists.append(artist)
+        data["artists"] = result_artists
+
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
