@@ -55,6 +55,8 @@ class TrackService:
             await self.__track_repo.session.refresh(track)
         except Exception as e:
             await self.__track_repo.session.rollback()
+            bucket_manager.delete_file(key=existing_track.track_url)
+            bucket_manager.delete_file(key=existing_track.photo_url)
             logger.warning(e)
 
         bucket_manager.upload_file(
