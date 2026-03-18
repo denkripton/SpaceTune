@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException
 from typing import Callable
 
-from src.exceptions import Error
+from src.exceptions import ServiceError
 from src.config import logger
 from src.databases.sql_db import AsyncSessionLocal
 
@@ -18,8 +18,8 @@ async def get_session() -> AsyncSession:
 async def get_error(method: Callable, *args, **kwargs):
     try:
         return await method(*args, **kwargs)
-    except Error as http_e:
-        raise HTTPException(status_code=http_e.status_code, detail=http_e.message)
+    except ServiceError as service_e:
+        raise HTTPException(status_code=service_e.status_code, detail=service_e.message)
     except Exception as e:
         logger.critical(e)
 
