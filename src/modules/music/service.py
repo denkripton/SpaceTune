@@ -1,4 +1,4 @@
-from src.modules.music.repository import TrackRepository
+from src.modules.music.repository import TrackRepository, RateRepository
 from src.modules.auth.repository import UserRepository
 from src.modules.music.schemas import (
     TrackCreationSchema,
@@ -15,9 +15,15 @@ import uuid
 
 
 class TrackService:
-    def __init__(self, track_repo: TrackRepository, user_repo: UserRepository):
+    def __init__(
+        self,
+        track_repo: TrackRepository,
+        user_repo: UserRepository,
+        rate_repo: RateRepository,
+    ):
         self.__track_repo = track_repo
         self.__user_repo = user_repo
+        self.__rate_repo = rate_repo
 
     async def create_track(
         self, user_id: str, data: TrackCreationSchema, music_file, image_file
@@ -131,3 +137,41 @@ class TrackService:
             )
 
         return list_to_return
+
+    async def rate_track(
+        self, user_id, track_name: str, owner_name: str, user_rate: int
+    ):
+        existing_owner = await self.__user_repo.get_one(username=owner_name)
+
+        if existing_owner is None:
+            raise ServiceError(code=422, msg="User does not exist")
+
+        existing_track = await self.__track_repo.get_one(
+            name=track_name, owner_id=existing_owner.id
+        )
+
+        if existing_track is None:
+            raise ServiceError(code=422, msg="Track does not exist")
+
+        existing_rate = await self.__rate_repo.get_one(
+            user_id=user_id, track_id=existing_track.id
+        )
+
+        if existing_rate is not None:
+            raise ServiceError(code=422, msg="You placed rate already")
+
+        data = {
+            "rate": user_rate,
+            "user_id": user_id,
+            "track_id": existing_track.id,
+        }
+
+        try:
+            rate = await self.__rate_repo.create(**data)
+            await self.__rate_repo.session.commit()
+            await self.__rate_repo.session.refresh(rate)
+        except Exception as e:
+            await self.__rate_repo.session.rollback()
+            logger.warning(e)
+
+        return f"You placed: {user_rate} to {track_name}, created by {existing_track.artists}"

@@ -4,11 +4,12 @@ from src.modules.auth.dependencies import user_repository
 from src.modules.auth.repository import UserRepository
 
 from src.modules.music.service import TrackService
-from src.modules.music.repository import TrackRepository
+from src.modules.music.repository import TrackRepository, RateRepository
 from src.dependencies import RepoFactory
 
 
 track_repository = RepoFactory(repo=TrackRepository)
+rate_repository = RepoFactory(repo=RateRepository)
 
 
 class TrackServiceFactory:
@@ -16,9 +17,12 @@ class TrackServiceFactory:
         self,
         track_repo: TrackRepository = Depends(track_repository),
         user_repo: UserRepository = Depends(user_repository),
+        rate_repo: RateRepository = Depends(rate_repository),
     ):
 
-        service = TrackService(track_repo=track_repo, user_repo=user_repo)
+        service = TrackService(
+            track_repo=track_repo, user_repo=user_repo, rate_repo=rate_repo
+        )
         return service
 
 

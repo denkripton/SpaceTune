@@ -29,6 +29,23 @@ async def my_tracks_get(
     return await get_error(service.get_my_tracks, user_id=user_id)
 
 
+@music_router.post("/track/rate", tags=["Rates"])
+async def place_rate(
+    track_name: str,
+    owner_name: str,
+    rate: int = Form(ge=1, le=10),
+    user_id: str = Depends(get_current_user),
+    service: TrackService = Depends(get_track_service),
+):
+    return await get_error(
+        service.rate_track,
+        user_id=user_id,
+        track_name=track_name,
+        owner_name=owner_name,
+        user_rate=rate,
+    )
+
+
 @music_router.post("/track/add", response_model=TrackReadSchema)
 async def add_track(
     name: str = Form(),

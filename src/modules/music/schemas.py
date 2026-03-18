@@ -13,6 +13,7 @@ class TrackCreationSchema(BaseModel):
 class TrackReadSchema(TrackCreationSchema):
     id: uuid.UUID
     duration: int
+    rates: float = Field(default=0)
 
 
 class TrackMetadataReadShema(BaseModel):
