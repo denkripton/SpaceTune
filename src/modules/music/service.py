@@ -1,6 +1,8 @@
 import uuid
 
-from src.modules.music.repository import TrackRepository, RateRepository
+
+from src.modules.music.repositories.track_repo import TrackRepository
+from src.modules.music.repositories.rate_repo import RateRepository
 from src.modules.auth.repository import UserRepository
 from src.modules.music.schemas import (
     TrackCreationSchema,
