@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, Response
 from src.dependencies import get_error
 from src.modules.auth.dependencies import get_user_service, get_current_user
 from src.modules.auth.service import UserService
-from src.modules.auth.schemas import (
-    UserCreateSchema,
-    UserLoginSchema,
-    ProfileCreationSchema,
-    UserProfileReadSchema,
-    UserUpdateSchema,
-    UserRead,
-)
+
+from src.modules.auth.schemas.profile_creation import ProfileCreationSchema
+from src.modules.auth.schemas.user_read import UserRead
+from src.modules.auth.schemas.profile_read import UserProfileReadSchema
+from src.modules.auth.schemas.user_login import UserLoginSchema
+from src.modules.auth.schemas.user_creation import UserCreateSchema
+from src.modules.auth.schemas.user_update import UserUpdateSchema
+
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
