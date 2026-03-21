@@ -9,7 +9,8 @@ from src.modules.auth.schemas import (
     UserUpdateSchema,
     UserRead,
 )
-from src.modules.auth.repository import UserRepository, ProfileRepository
+from src.modules.auth.repositories.profile_repo import ProfileRepository
+from src.modules.auth.repositories.user_repo import UserRepository
 from src.modules.auth.utils.jwt import JWT
 from src.modules.auth.utils.hash_generation import pw_manager
 
