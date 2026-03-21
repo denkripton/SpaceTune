@@ -4,11 +4,9 @@ import uuid
 from src.modules.music.repositories.track_repo import TrackRepository
 from src.modules.music.repositories.rate_repo import RateRepository
 from src.modules.auth.repository import UserRepository
-from src.modules.music.schemas import (
-    TrackCreationSchema,
-    TrackMetadataReadShema,
-    TrackReadSchema,
-)
+from src.modules.music.schemas.track_read import TrackReadSchema
+from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track_creation import TrackCreationSchema
 from src.aws.utils.actions import bucket_manager
 from src.modules.music.config import logger
 from src.modules.music.utils.duration import count_duration

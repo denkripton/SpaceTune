@@ -4,11 +4,10 @@ from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service
 from src.dependencies import get_error
 from src.modules.auth.dependencies import get_current_user
-from src.modules.music.schemas import (
-    TrackCreationSchema,
-    TrackReadSchema,
-    TrackMetadataReadShema,
-)
+from src.modules.music.schemas.track_read import TrackReadSchema
+from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track_creation import TrackCreationSchema
+
 
 music_router = APIRouter(prefix="/music", tags=["Music"])
 
