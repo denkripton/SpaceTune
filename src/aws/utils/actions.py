@@ -26,4 +26,5 @@ class S3Bucket:
         )
         return url
 
+
 bucket_manager = S3Bucket()

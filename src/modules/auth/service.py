@@ -1,15 +1,16 @@
 import uuid
 
 from src.exceptions import ServiceError
-from src.modules.auth.schemas import (
-    UserCreateSchema,
-    UserLoginSchema,
-    ProfileCreationSchema,
-    UserProfileReadSchema,
-    UserUpdateSchema,
-    UserRead,
-)
-from src.modules.auth.repository import UserRepository, ProfileRepository
+
+from src.modules.auth.schemas.profile_creation import ProfileCreationSchema
+from src.modules.auth.schemas.user_read import UserRead
+from src.modules.auth.schemas.profile_read import UserProfileReadSchema
+from src.modules.auth.schemas.user_login import UserLoginSchema
+from src.modules.auth.schemas.user_creation import UserCreateSchema
+from src.modules.auth.schemas.user_update import UserUpdateSchema
+
+from src.modules.auth.repositories.profile_repo import ProfileRepository
+from src.modules.auth.repositories.user_repo import UserRepository
 from src.modules.auth.utils.jwt import JWT
 from src.modules.auth.utils.hash_generation import pw_manager
 

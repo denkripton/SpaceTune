@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, Response, UploadFile, Form, File
-from typing import Union, Annotated, List
+from fastapi import APIRouter, Depends, UploadFile, Form, File
 
 from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service
 from src.dependencies import get_error
 from src.modules.auth.dependencies import get_current_user
-from src.modules.music.schemas import (
-    TrackCreationSchema,
-    TrackReadSchema,
-    TrackMetadataReadShema,
-)
+from src.modules.music.schemas.track_read import TrackReadSchema
+from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track_creation import TrackCreationSchema
+
 
 music_router = APIRouter(prefix="/music", tags=["Music"])
 
@@ -27,6 +25,23 @@ async def my_tracks_get(
     service: TrackService = Depends(get_track_service),
 ):
     return await get_error(service.get_my_tracks, user_id=user_id)
+
+
+@music_router.post("/track/rate", tags=["Rates"])
+async def place_rate(
+    track_name: str,
+    owner_name: str,
+    rate: int = Form(ge=1, le=10),
+    user_id: str = Depends(get_current_user),
+    service: TrackService = Depends(get_track_service),
+):
+    return await get_error(
+        service.rate_track,
+        user_id=user_id,
+        track_name=track_name,
+        owner_name=owner_name,
+        user_rate=rate,
+    )
 
 
 @music_router.post("/track/add", response_model=TrackReadSchema)

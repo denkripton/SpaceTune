@@ -1,7 +1,8 @@
+import uuid
+
 from src.repositories.postgres import SQLAlchemyRepository
 from src.modules.music.models import Track
 
-import uuid
 
 class TrackRepository(SQLAlchemyRepository):
     model = Track

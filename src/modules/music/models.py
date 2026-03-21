@@ -1,3 +1,6 @@
+import uuid
+from typing import Optional, List
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
 from sqlalchemy import (
@@ -8,10 +11,8 @@ from sqlalchemy import (
     ForeignKey,
     BigInteger,
 )
-from typing import Optional, List
 
 from src.databases.sql_db import Base
-import uuid
 
 
 class Rate(Base):
@@ -64,8 +65,6 @@ class Track(Base):
 
     track_rates_conn: Mapped[List["Rate"]] = relationship(back_populates="track_conn")
 
-    
     owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
 
     owner: Mapped["User"] = relationship(back_populates="track")
-
