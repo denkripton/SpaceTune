@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Response
 from typing import Union
+
+from fastapi import APIRouter, Depends, Response
 
 from src.dependencies import get_error
 from src.modules.auth.dependencies import get_user_service, get_current_user

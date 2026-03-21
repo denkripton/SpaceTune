@@ -1,8 +1,6 @@
-from fastapi import UploadFile
-from pydantic import BaseModel, field_validator, Field
-from datetime import date
-from typing import Optional
 import uuid
+
+from pydantic import BaseModel, field_validator, Field
 
 
 class TrackCreationSchema(BaseModel):

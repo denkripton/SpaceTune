@@ -1,9 +1,11 @@
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
+import uuid
 from typing import Optional, List
 
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
+
 from src.databases.sql_db import Base
-import uuid
+
 
 class User(Base):
     __tablename__ = "users"

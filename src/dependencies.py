@@ -1,6 +1,7 @@
+from typing import Callable
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException
-from typing import Callable
 
 from src.exceptions import ServiceError
 from src.config import logger

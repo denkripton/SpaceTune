@@ -1,3 +1,5 @@
+import uuid
+
 from src.modules.music.repository import TrackRepository, RateRepository
 from src.modules.auth.repository import UserRepository
 from src.modules.music.schemas import (
@@ -10,8 +12,6 @@ from src.modules.music.config import logger
 from src.modules.music.utils.duration import count_duration
 from src.modules.auth.utils.hash_generation import pw_manager
 from src.exceptions import ServiceError
-
-import uuid
 
 
 class TrackService:
@@ -36,7 +36,7 @@ class TrackService:
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-        
+
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=data["name"]
         )

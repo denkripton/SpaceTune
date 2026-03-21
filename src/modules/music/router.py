@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, Response, UploadFile, Form, File
-from typing import Union, Annotated, List
+from fastapi import APIRouter, Depends, UploadFile, Form, File
 
 from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service

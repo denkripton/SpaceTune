@@ -1,5 +1,6 @@
-from fastapi import Depends, Request, Response, HTTPException
 from typing import Optional
+
+from fastapi import Depends, Request, Response, HTTPException
 
 from src.modules.auth.service import UserService
 from src.modules.auth.repository import UserRepository, ProfileRepository
@@ -23,7 +24,8 @@ class UserServiceFactory:
         jwt: JWT = Depends(get_jwt_service),
     ):
         return UserService(repo=user_repo, profile_repo=profile_repo, jwt=jwt)
-    
+
+
 get_user_service = UserServiceFactory()
 
 

@@ -1,8 +1,9 @@
-from pydantic import BaseModel, field_validator, EmailStr, Field
 from datetime import date
 from typing import Optional
 import re
 import uuid
+
+from pydantic import BaseModel, field_validator, EmailStr, Field
 
 
 class UserCreateSchema(BaseModel):
