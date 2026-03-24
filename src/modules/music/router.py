@@ -9,17 +9,29 @@ from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track_creation import TrackCreationSchema
 
 
-music_router = APIRouter(prefix="/music", tags=["Music"])
+music_router = APIRouter(prefix="/music")
 
 
-@music_router.get("/track/{track_name}", response_model=TrackMetadataReadShema)
+@music_router.get(
+    "/track/{track_name}",
+    summary="Get track",
+    tags=["Track CRUD's"],
+    description="Get track with metadata",
+    response_model=TrackMetadataReadShema,
+)
 async def track_get(
     track_name: str, service: TrackService = Depends(get_track_service)
 ):
     return await get_error(service.get_track, track_name=track_name)
 
 
-@music_router.get("/tracks/my", response_model=list[TrackMetadataReadShema])
+@music_router.get(
+    "/tracks/my",
+    summary="Get tracks (Protected)",
+    tags=["Track CRUD's"],
+    description="Get your tracks with their metadata",
+    response_model=list[TrackMetadataReadShema],
+)
 async def my_tracks_get(
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
@@ -27,7 +39,12 @@ async def my_tracks_get(
     return await get_error(service.get_my_tracks, user_id=user_id)
 
 
-@music_router.post("/track/rate", tags=["Rates"])
+@music_router.post(
+    "/track/rate",
+    summary="Place grade (Protected)",
+    description="Give rate for a track",
+    tags=["Grades"],
+)
 async def place_rate(
     track_name: str,
     owner_name: str,
@@ -44,7 +61,13 @@ async def place_rate(
     )
 
 
-@music_router.post("/track/add", response_model=TrackReadSchema)
+@music_router.post(
+    "/track/add",
+    summary="Create track (Protected)",
+    tags=["Track CRUD's"],
+    description="Create track",
+    response_model=TrackReadSchema,
+)
 async def add_track(
     name: str = Form(),
     artists: list[str] = Form(),
@@ -63,7 +86,12 @@ async def add_track(
     )
 
 
-@music_router.delete("/track/delete")
+@music_router.delete(
+    "/track/delete",
+    summary="Delete track (Protected)",
+    tags=["Track CRUD's"],
+    description="Delete your track",
+)
 async def track_delete(
     track_name: str,
     password: str,
