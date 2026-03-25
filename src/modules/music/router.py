@@ -7,7 +7,7 @@ from src.modules.auth.dependencies import get_current_user
 from src.modules.music.schemas.track_read import TrackReadSchema
 from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track_creation import TrackCreationSchema
-
+from src.modules.exception_schema import ExcetpionSchema
 
 music_router = APIRouter(prefix="/music")
 
@@ -18,6 +18,9 @@ music_router = APIRouter(prefix="/music")
     tags=["Track CRUD's"],
     description="Get track with metadata",
     response_model=TrackMetadataReadShema,
+    responses={
+        422: {"model": ExcetpionSchema}
+    }
 )
 async def track_get(
     track_name: str, service: TrackService = Depends(get_track_service)
@@ -31,6 +34,10 @@ async def track_get(
     tags=["Track CRUD's"],
     description="Get your tracks with their metadata",
     response_model=list[TrackMetadataReadShema],
+    responses={
+        401: {"model": ExcetpionSchema},
+        422: {"model": ExcetpionSchema}
+    }
 )
 async def my_tracks_get(
     user_id: str = Depends(get_current_user),
@@ -44,6 +51,10 @@ async def my_tracks_get(
     summary="Place grade (Protected)",
     description="Give rate for a track",
     tags=["Grades"],
+    responses={
+        401: {"model": ExcetpionSchema},
+        422: {"model": ExcetpionSchema}
+    }
 )
 async def place_rate(
     track_name: str,
@@ -67,6 +78,10 @@ async def place_rate(
     tags=["Track CRUD's"],
     description="Create track",
     response_model=TrackReadSchema,
+    responses={
+        401: {"model": ExcetpionSchema},
+        422: {"model": ExcetpionSchema}
+    }
 )
 async def add_track(
     name: str = Form(),
@@ -91,6 +106,11 @@ async def add_track(
     summary="Delete track (Protected)",
     tags=["Track CRUD's"],
     description="Delete your track",
+    responses={
+        401: {"model": ExcetpionSchema},
+        403: {"model": ExcetpionSchema},
+        422: {"model": ExcetpionSchema}
+    }
 )
 async def track_delete(
     track_name: str,
