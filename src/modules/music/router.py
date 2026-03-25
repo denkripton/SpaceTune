@@ -49,26 +49,26 @@ async def my_tracks_get(
 @music_router.post(
     "/track/rate",
     summary="Place grade (Protected)",
-    description="Give rate for a track",
+    description="Give grade for a track",
     tags=["Grades"],
     responses={
         401: {"model": ExcetpionSchema},
         422: {"model": ExcetpionSchema}
     }
 )
-async def place_rate(
+async def place_grade(
     track_name: str,
     owner_name: str,
-    rate: int = Form(ge=1, le=10),
+    grade: int = Form(ge=1, le=10),
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
 ):
     return await get_error(
-        service.rate_track,
+        service.grade_track,
         user_id=user_id,
         track_name=track_name,
         owner_name=owner_name,
-        user_rate=rate,
+        user_grade=grade,
     )
 
 

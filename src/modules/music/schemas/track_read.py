@@ -8,4 +8,4 @@ from src.modules.music.schemas.track_creation import TrackCreationSchema
 class TrackReadSchema(TrackCreationSchema):
     id: uuid.UUID
     duration: int
-    rates: float = Field(default=0)
+    grades: float = Field(default=0)

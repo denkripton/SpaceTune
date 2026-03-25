@@ -15,13 +15,13 @@ from sqlalchemy import (
 from src.databases.sql_db import Base
 
 
-class Rate(Base):
-    __tablename__ = "rates"
+class Grade(Base):
+    __tablename__ = "grades"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
     )
-    rate: Mapped[int] = mapped_column()
+    grade: Mapped[int] = mapped_column()
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -36,8 +36,8 @@ class Rate(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     track_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tracks.id"))
 
-    track_conn: Mapped["Track"] = relationship(back_populates="track_rates_conn")
-    user_conn: Mapped["User"] = relationship(back_populates="user_rates_conn")
+    track_conn: Mapped["Track"] = relationship(back_populates="track_grades_conn")
+    user_conn: Mapped["User"] = relationship(back_populates="user_grades_conn")
 
 
 class Track(Base):
@@ -63,7 +63,7 @@ class Track(Base):
         nullable=False,
     )
 
-    track_rates_conn: Mapped[List["Rate"]] = relationship(back_populates="track_conn")
+    track_grades_conn: Mapped[List["Grade"]] = relationship(back_populates="track_conn")
 
     owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
 

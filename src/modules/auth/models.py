@@ -29,7 +29,7 @@ class User(Base):
 
     profile: Mapped["UserProfile"] = relationship(back_populates="user")
     track: Mapped[List["Track"]] = relationship(back_populates="owner")
-    user_rates_conn: Mapped[List["Rate"]] = relationship(back_populates="user_conn")
+    user_grades_conn: Mapped[List["Grade"]] = relationship(back_populates="user_conn")
 
 
 class UserProfile(Base):

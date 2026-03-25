@@ -2,7 +2,7 @@ import uuid
 
 
 from src.modules.music.repositories.track_repo import TrackRepository
-from src.modules.music.repositories.rate_repo import RateRepository
+from src.modules.music.repositories.grade_repo import GradeRepository
 from src.modules.auth.repositories.user_repo import UserRepository
 from src.modules.music.schemas.track_read import TrackReadSchema
 from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
@@ -19,7 +19,7 @@ class TrackService:
         self,
         track_repo: TrackRepository,
         user_repo: UserRepository,
-        rate_repo: RateRepository,
+        rate_repo: GradeRepository,
     ):
         self.__track_repo = track_repo
         self.__user_repo = user_repo
@@ -138,8 +138,8 @@ class TrackService:
 
         return list_to_return
 
-    async def rate_track(
-        self, user_id, track_name: str, owner_name: str, user_rate: int
+    async def grade_track(
+        self, user_id, track_name: str, owner_name: str, user_grade: int
     ):
         existing_owner = await self.__user_repo.get_one(username=owner_name)
 
@@ -161,7 +161,7 @@ class TrackService:
             raise ServiceError(code=422, msg="You placed rate already")
 
         data = {
-            "rate": user_rate,
+            "grade": user_grade,
             "user_id": user_id,
             "track_id": existing_track.id,
         }
@@ -174,4 +174,4 @@ class TrackService:
             await self.__rate_repo.session.rollback()
             logger.warning(e)
 
-        return f"You placed: {user_rate} to {track_name}, created by {existing_track.artists}"
+        return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
