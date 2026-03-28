@@ -9,7 +9,7 @@ from src.dependencies import RepoFactory
 
 
 track_repository = RepoFactory(repo=TrackRepository)
-rate_repository = RepoFactory(repo=GradeRepository)
+grade_repository = RepoFactory(repo=GradeRepository)
 
 
 class TrackServiceFactory:
@@ -17,11 +17,11 @@ class TrackServiceFactory:
         self,
         track_repo: TrackRepository = Depends(track_repository),
         user_repo: UserRepository = Depends(user_repository),
-        rate_repo: GradeRepository = Depends(rate_repository),
+        grade_repo: GradeRepository = Depends(grade_repository),
     ):
 
         service = TrackService(
-            track_repo=track_repo, user_repo=user_repo, rate_repo=rate_repo
+            track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo
         )
         return service
 
