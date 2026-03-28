@@ -24,7 +24,7 @@ class SQLAlchemyRepository(ABCRepository):
         obj = data.scalars().first()
         return obj
     
-    async def get_many(self, skip: int = 0, limit: int = 10, **kwargs):
+    async def get_many(self, skip: int = 0, limit: int = None, **kwargs):
         conditions = []
 
         for key, value in kwargs.items():

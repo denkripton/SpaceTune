@@ -10,6 +10,7 @@ from src.modules.music.schemas.track_creation import TrackCreationSchema
 from src.aws.utils.actions import bucket_manager
 from src.modules.music.config import logger
 from src.modules.music.utils.duration import count_duration
+from src.modules.music.utils.count_avg import count_avg
 from src.modules.auth.utils.hash_generation import pw_manager
 from src.exceptions import ServiceError
 
@@ -110,9 +111,27 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
+        grades = await self.__rate_repo.get_many(track_id=existing_track.id)
+        grades_arr = []
+
+        for g in grades:
+            grades_arr.append(g.grade)
+
+        avg_grade = count_avg(arr=grades_arr)
+
+        # It looks terrible, but now I can't find any other solution
+        metadata = TrackReadSchema(
+            id=existing_track.id,
+            name=existing_track.name,
+            artists=existing_track.artists,
+            duration=existing_track.duration,
+            grades=avg_grade,
+        )
+
         track = bucket_manager.presigned_url(key=existing_track.track_url)
         photo = bucket_manager.presigned_url(key=existing_track.photo_url)
-        return {"metadata": existing_track, "audio": track, "image": photo}
+        
+        return {"metadata": metadata, "audio": track, "image": photo}
 
     async def get_my_tracks(self, user_id):
 
