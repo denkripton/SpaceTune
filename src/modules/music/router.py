@@ -7,7 +7,8 @@ from src.modules.auth.dependencies import get_current_user
 from src.modules.music.schemas.track_read import TrackReadSchema
 from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track_creation import TrackCreationSchema
-from src.modules.exception_schema import ExcetpionSchema
+from src.modules.music.schemas.exceptions import track_422
+from src.utils.schemas.exception_schema import ExceptionSchema
 
 music_router = APIRouter(prefix="/music")
 
@@ -19,7 +20,7 @@ music_router = APIRouter(prefix="/music")
     description="Get track with metadata",
     response_model=TrackMetadataReadShema,
     responses={
-        422: {"model": ExcetpionSchema}
+        422: {"model": track_422.Track422}
     }
 )
 async def track_get(
@@ -35,8 +36,8 @@ async def track_get(
     description="Get your tracks with their metadata",
     response_model=list[TrackMetadataReadShema],
     responses={
-        401: {"model": ExcetpionSchema},
-        422: {"model": ExcetpionSchema}
+        401: {"model": track_422.Track422},
+        422: {"model": track_422.Track422}
     }
 )
 async def my_tracks_get(
@@ -52,8 +53,8 @@ async def my_tracks_get(
     description="Give grade for a track",
     tags=["Grades"],
     responses={
-        401: {"model": ExcetpionSchema},
-        422: {"model": ExcetpionSchema}
+        401: {"model": ExceptionSchema},
+        422: {"model": track_422.Track422}
     }
 )
 async def place_grade(
@@ -79,8 +80,8 @@ async def place_grade(
     description="Create track",
     response_model=TrackReadSchema,
     responses={
-        401: {"model": ExcetpionSchema},
-        422: {"model": ExcetpionSchema}
+        401: {"model": ExceptionSchema},
+        422: {"model": track_422.Track422}
     }
 )
 async def add_track(
@@ -107,9 +108,9 @@ async def add_track(
     tags=["Track CRUD's"],
     description="Delete your track",
     responses={
-        401: {"model": ExcetpionSchema},
-        403: {"model": ExcetpionSchema},
-        422: {"model": ExcetpionSchema}
+        401: {"model": ExceptionSchema},
+        403: {"model": ExceptionSchema},
+        422: {"model": track_422.Track422}
     }
 )
 async def track_delete(
