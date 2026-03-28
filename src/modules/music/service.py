@@ -20,11 +20,11 @@ class TrackService:
         self,
         track_repo: TrackRepository,
         user_repo: UserRepository,
-        rate_repo: GradeRepository,
+        grade_repo: GradeRepository,
     ):
         self.__track_repo = track_repo
         self.__user_repo = user_repo
-        self.__rate_repo = rate_repo
+        self.__grade_repo = grade_repo
 
     async def create_track(
         self, user_id: str, data: TrackCreationSchema, music_file, image_file
@@ -111,7 +111,7 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
-        grades = await self.__rate_repo.get_many(track_id=existing_track.id)
+        grades = await self.__grade_repo.get_many(track_id=existing_track.id)
         grades_arr = []
 
         for g in grades:
@@ -172,12 +172,12 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
-        existing_rate = await self.__rate_repo.get_one(
+        existing_grade = await self.__grade_repo.get_one(
             user_id=user_id, track_id=existing_track.id
         )
 
-        if existing_rate is not None:
-            raise ServiceError(code=422, msg="You placed rate already")
+        if existing_grade is not None:
+            raise ServiceError(code=422, msg="You placed grade already")
 
         data = {
             "grade": user_grade,
@@ -186,11 +186,11 @@ class TrackService:
         }
 
         try:
-            rate = await self.__rate_repo.create(**data)
-            await self.__rate_repo.session.commit()
-            await self.__rate_repo.session.refresh(rate)
+            grade = await self.__grade_repo.create(**data)
+            await self.__grade_repo.session.commit()
+            await self.__grade_repo.session.refresh(grade)
         except Exception as e:
-            await self.__rate_repo.session.rollback()
+            await self.__grade_repo.session.rollback()
             logger.warning(e)
 
         return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
