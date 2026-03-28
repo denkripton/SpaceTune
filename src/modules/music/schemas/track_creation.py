@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-
-class TrackCreationSchema(BaseModel):
+from src.utils.schemas.base_schema import BaseSchema
+class TrackCreationSchema(BaseSchema):
     name: str = Field(min_length=1, max_length=50, default="baobab")
     artists: list[str]
