@@ -118,7 +118,7 @@ class UserService:
         existing_user = await self.repo.get_one(username=username)
 
         if existing_user is None:
-            raise ServiceError(code=403, msg="User does not exist")
+            raise ServiceError(code=422, msg="User does not exist")
 
         return await self._assemble(user=existing_user)
 
