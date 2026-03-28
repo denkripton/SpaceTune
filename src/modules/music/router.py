@@ -1,3 +1,5 @@
+from typing import Union
+
 from fastapi import APIRouter, Depends, UploadFile, Form, File
 
 from src.modules.music.service import TrackService
@@ -7,9 +9,12 @@ from src.modules.auth.dependencies import get_current_user
 from src.modules.music.schemas.track_read import TrackReadSchema
 from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track_creation import TrackCreationSchema
+
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.password_403 import Password403
+from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.music.schemas.exceptions.grade_422 import Grade422
 
 music_router = APIRouter(prefix="/music")
 
@@ -20,9 +25,7 @@ music_router = APIRouter(prefix="/music")
     tags=["Track CRUD's"],
     description="Get track with metadata",
     response_model=TrackMetadataReadShema,
-    responses={
-        422: {"model": Track422}
-    }
+    responses={422: {"model": Track422}},
 )
 async def track_get(
     track_name: str, service: TrackService = Depends(get_track_service)
@@ -38,7 +41,7 @@ async def track_get(
     response_model=list[TrackMetadataReadShema],
     responses={
         401: {"model": User401},
-    }
+    },
 )
 async def my_tracks_get(
     user_id: str = Depends(get_current_user),
@@ -48,14 +51,14 @@ async def my_tracks_get(
 
 
 @music_router.post(
-    "/track/rate",
+    "/track/grate",
     summary="Place grade (Protected)",
     description="Give grade for a track",
     tags=["Grades"],
     responses={
         401: {"model": User401},
-        422: {"model": Track422}
-    }
+        422: {"model": Union[Track422, User422, Grade422]},
+    },
 )
 async def place_grade(
     track_name: str,
@@ -79,10 +82,7 @@ async def place_grade(
     tags=["Track CRUD's"],
     description="Create track",
     response_model=TrackReadSchema,
-    responses={
-        401: {"model": User401},
-        422: {"model": Track422}
-    }
+    responses={401: {"model": User401}, 422: {"model": Union[Track422, User422]}},
 )
 async def add_track(
     name: str = Form(),
@@ -110,8 +110,8 @@ async def add_track(
     responses={
         401: {"model": User401},
         403: {"model": Password403},
-        422: {"model": Track422}
-    }
+        422: {"model": Union[Track422, User422]},
+    },
 )
 async def track_delete(
     track_name: str,
