@@ -43,7 +43,6 @@ async def register_user(
     summary="Authenticate",
     tags=["Authentication"],
     description="Login user",
-    response_model=UserRead,
     responses={
         403: {"model": Password403},
         422: {"model": User422},
