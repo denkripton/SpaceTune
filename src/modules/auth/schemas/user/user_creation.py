@@ -18,8 +18,3 @@ class UserCreateSchema(BaseModel):
                 """Password is invalid. It must contain at least: one lowercase letter, one upper case letter, one digit, on special character. Length: 8-64"""
             )
         return password
-
-
-class UserLoginSchema(BaseModel):
-    email: EmailStr = Field(max_length=50, examples=["user@gmail.com"])
-    password: str = Field(min_length=8, max_length=64)
