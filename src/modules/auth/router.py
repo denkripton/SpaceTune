@@ -12,6 +12,7 @@ from src.modules.auth.schemas.profile.profile_read import UserProfileReadSchema
 from src.modules.auth.schemas.user.user_login import UserLoginSchema
 from src.modules.auth.schemas.user.user_creation import UserCreateSchema
 from src.modules.auth.schemas.user.user_update import UserUpdateSchema
+from src.modules.auth.schemas.user.auth_read import AuthReadSchema
 
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.password_403 import Password403
@@ -43,6 +44,7 @@ async def register_user(
     summary="Authenticate",
     tags=["Authentication"],
     description="Login user",
+    response_model=AuthReadSchema,
     responses={
         403: {"model": Password403},
         422: {"model": User422},
