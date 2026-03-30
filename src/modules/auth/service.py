@@ -3,11 +3,12 @@ import uuid
 from src.exceptions import ServiceError
 
 from src.modules.auth.schemas.profile.profile_creation import ProfileCreationSchema
-from src.modules.auth.schemas.user.user_read import UserRead
 from src.modules.auth.schemas.profile.profile_read import UserProfileReadSchema
-from src.modules.auth.schemas.user.user_login import UserLoginSchema
-from src.modules.auth.schemas.user.user_creation import UserCreateSchema
-from src.modules.auth.schemas.user.user_update import UserUpdateSchema
+
+from src.modules.auth.schemas.user.read import UserRead
+from src.modules.auth.schemas.user.login import UserLoginSchema
+from src.modules.auth.schemas.user.creation import UserCreateSchema
+from src.modules.auth.schemas.user.update import UserUpdateSchema
 
 from src.modules.auth.repositories.profile_repo import ProfileRepository
 from src.modules.auth.repositories.user_repo import UserRepository
