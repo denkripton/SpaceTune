@@ -4,7 +4,7 @@ from src.modules.auth.dependencies import user_repository
 from src.modules.auth.repositories.user import UserRepository
 from src.modules.music.service import TrackService
 from src.modules.music.repositories.track_repo import TrackRepository
-from src.modules.music.repositories.grade_repo import GradeRepository
+from src.modules.music.repositories.grade import GradeRepository
 from src.dependencies import RepoFactory
 
 
