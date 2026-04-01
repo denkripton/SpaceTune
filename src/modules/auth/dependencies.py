@@ -4,7 +4,7 @@ from fastapi import Depends, Request, Response, HTTPException
 
 from src.modules.auth.service import UserService
 from src.modules.auth.repositories.profile import ProfileRepository
-from src.modules.auth.repositories.user_repo import UserRepository
+from src.modules.auth.repositories.user import UserRepository
 from src.dependencies import RepoFactory
 from src.modules.auth.utils.jwt import JWT
 
