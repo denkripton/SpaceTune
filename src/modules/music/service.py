@@ -1,7 +1,7 @@
 import uuid
 
 
-from src.modules.music.repositories.track_repo import TrackRepository
+from src.modules.music.repositories.track import TrackRepository
 from src.modules.music.repositories.grade import GradeRepository
 from src.modules.auth.repositories.user import UserRepository
 from src.modules.music.schemas.track_read import TrackReadSchema
