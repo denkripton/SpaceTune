@@ -1,20 +1,26 @@
-import os
-from dotenv import load_dotenv
 import logging
-
-load_dotenv()
-
-pg_user = os.getenv("PGUSER")
-pg_password = os.getenv("PGPASSWORD")
-db_name = os.getenv("DB_NAME")
-db_host = os.getenv("DB_HOST")
-db_port = os.getenv("DB_PORT")
-
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql+asyncpg://{pg_user}:{pg_password}@{db_host}:{db_port}/{db_name}"
-)
-
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logging.basicConfig(level=logging.INFO)
 
+
+class Settings(BaseSettings):
+    DB_URL: str
+
+    JWT_SECRET_KEY: str
+
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_REDIRECT_URI: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_USERINFO_URL: str
+
+    AWS_SECRET: str
+    AWS_ACCESS: str
+    AWS_REGION: str
+
+    BUCKET_NAME: str
+
+    model_config = SettingsConfigDict(env_file=".env")
+
+settings = Settings()
 logger = logging.getLogger(__name__)

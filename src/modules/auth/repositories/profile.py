@@ -1,15 +1,7 @@
 import uuid
 
 from src.repositories.postgres import SQLAlchemyRepository
-from src.modules.auth.models import User, UserProfile
-
-
-class UserRepository(SQLAlchemyRepository):
-    model = User
-
-    async def get_by_email(self, email: str):
-        user = await self.get_one(email=email)
-        return user
+from src.modules.auth.models import UserProfile
 
 
 class ProfileRepository(SQLAlchemyRepository):

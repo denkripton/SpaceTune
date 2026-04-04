@@ -1,15 +1,17 @@
 import uuid
 
 from src.exceptions import ServiceError
-from src.modules.auth.schemas import (
-    UserCreateSchema,
-    UserLoginSchema,
-    ProfileCreationSchema,
-    UserProfileReadSchema,
-    UserUpdateSchema,
-    UserRead,
-)
-from src.modules.auth.repository import UserRepository, ProfileRepository
+
+from src.modules.auth.schemas.profile.profile_creation import ProfileCreationSchema
+from src.modules.auth.schemas.profile.profile_read import UserProfileReadSchema
+
+from src.modules.auth.schemas.user.read import UserRead
+from src.modules.auth.schemas.user.login import UserLoginSchema
+from src.modules.auth.schemas.user.creation import UserCreateSchema
+from src.modules.auth.schemas.user.update import UserUpdateSchema
+
+from src.modules.auth.repositories.profile import ProfileRepository
+from src.modules.auth.repositories.user import UserRepository
 from src.modules.auth.utils.jwt import JWT
 from src.modules.auth.utils.hash_generation import pw_manager
 
@@ -117,7 +119,7 @@ class UserService:
         existing_user = await self.repo.get_one(username=username)
 
         if existing_user is None:
-            raise ServiceError(code=403, msg="User does not exist")
+            raise ServiceError(code=422, msg="User does not exist")
 
         return await self._assemble(user=existing_user)
 

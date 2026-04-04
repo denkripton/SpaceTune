@@ -1,5 +1,6 @@
 from src.aws.client import s3_client
-from src.aws.config import BUCKET_NAME, PRESIGNED_URL_EXP
+from src.aws.constants import PRESIGNED_URL_EXP
+from src.config import settings
 
 
 class S3Bucket:
@@ -9,21 +10,22 @@ class S3Bucket:
     def upload_file(self, file_type: str, file: str, key: str) -> str:
         self.__client.upload_fileobj(
             Fileobj=file,
-            Bucket=BUCKET_NAME,
+            Bucket=settings.BUCKET_NAME,
             Key=key,
             ExtraArgs={"ContentType": file_type},
         )
         return key
 
     def delete_file(self, key: str):
-        self.__client.delete_object(Bucket=BUCKET_NAME, Key=key)
+        self.__client.delete_object(Bucket=settings.BUCKET_NAME, Key=key)
 
     def presigned_url(self, key: str) -> str:
         url = self.__client.generate_presigned_url(
             ClientMethod="get_object",
-            Params={"Bucket": BUCKET_NAME, "Key": key},
+            Params={"Bucket": settings.BUCKET_NAME, "Key": key},
             ExpiresIn=PRESIGNED_URL_EXP,
         )
         return url
+
 
 bucket_manager = S3Bucket()

@@ -5,6 +5,7 @@ class ABCRepository(ABC):
     @abstractmethod
     async def create():
         raise NotImplementedError("Method must be redifined")
+
     @abstractmethod
     async def get_one():
         raise NotImplementedError("Method must be redifined")
