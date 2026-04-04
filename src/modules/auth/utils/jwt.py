@@ -4,18 +4,18 @@ from datetime import datetime, timedelta, UTC
 from jwt import encode, decode
 from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidSubjectError
 
-from src.modules.auth.config import JWT_SECRET
+from src.config import settings
 
 
 class JWT:
     algorithm = "HS256"
 
     def create_token(self, payload: dict) -> str:
-        token = encode(payload=payload, key=JWT_SECRET, algorithm=self.algorithm)
+        token = encode(payload=payload, key=settings.JWT_SECRET_KEY, algorithm=self.algorithm)
         return token
 
     def decode_token(self, token: str) -> dict:
-        decoded_token = decode(jwt=token, key=JWT_SECRET, algorithms=[self.algorithm])
+        decoded_token = decode(jwt=token, key=settings.JWT_SECRET_KEY, algorithms=[self.algorithm])
         return decoded_token
 
     def create_access_token(self, id: str) -> str:

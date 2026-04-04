@@ -1,10 +1,9 @@
 import boto3
-
-from src.aws.config import AWS_ACCESS, AWS_REGION, AWS_SECRET
+from src.config import settings
 
 s3_client = boto3.client(
     "s3",
-    aws_access_key_id=AWS_ACCESS,
-    aws_secret_access_key=AWS_SECRET,
-    region_name=AWS_REGION,
+    aws_access_key_id=settings.AWS_ACCESS,
+    aws_secret_access_key=settings.AWS_SECRET,
+    region_name=settings.AWS_REGION,
 )
