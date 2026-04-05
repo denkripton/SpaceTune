@@ -1,5 +1,5 @@
 import uuid
-
+from datetime import datetime
 
 from src.modules.music.repositories.track import TrackRepository
 from src.modules.music.repositories.grade import GradeRepository
@@ -78,7 +78,16 @@ class TrackService:
             file_type=image_file.content_type,
             key=image_aws_key,
         )
-        return track
+
+        metadata = TrackReadSchema(
+            id=track.id,
+            name=track.name,
+            artists=track.artists,
+            duration=track.duration,
+            released=datetime.strftime(track.created_at, "%Y-%m-%d"),
+        )
+
+        return metadata
 
     async def delete_track(self, user_id, password, track_name):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
@@ -128,11 +137,12 @@ class TrackService:
             artists=existing_track.artists,
             duration=existing_track.duration,
             grades=avg_grade,
+            released=datetime.strftime(existing_track.created_at, "%Y-%m-%d"),
         )
 
         track = bucket_manager.presigned_url(key=existing_track.track_url)
         photo = bucket_manager.presigned_url(key=existing_track.photo_url)
-        
+
         return {"metadata": metadata, "audio": track, "image": photo}
 
     async def get_my_tracks(self, user_id):
@@ -151,6 +161,7 @@ class TrackService:
                         name=track.name,
                         artists=track.artists,
                         duration=track.duration,
+                        released=datetime.strftime(track.created_at, "%Y-%m-%d"),
                     ),
                     audio=audio,
                     image=image,
