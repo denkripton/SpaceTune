@@ -13,7 +13,7 @@ from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.update import UserUpdateSchema
-from src.modules.auth.schemas.user.auth_read import AuthReadSchema
+from src.modules.auth.schemas.auth.read import AuthReadSchema
 
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.password_403 import Password403
