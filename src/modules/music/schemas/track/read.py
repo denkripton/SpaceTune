@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import Field
 
-from src.modules.music.schemas.track_creation import TrackCreationSchema
+from src.modules.music.schemas.track.creation import TrackCreationSchema
 
 
 class TrackReadSchema(TrackCreationSchema):

@@ -6,9 +6,10 @@ from src.modules.music.service import TrackService
 from src.modules.music.dependencies import get_track_service
 from src.dependencies import get_error
 from src.modules.auth.dependencies import get_current_user
-from src.modules.music.schemas.track_read import TrackReadSchema
-from src.modules.music.schemas.track_metadata import TrackMetadataReadShema
-from src.modules.music.schemas.track_creation import TrackCreationSchema
+
+from src.modules.music.schemas.track.read import TrackReadSchema
+from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track.creation import TrackCreationSchema
 
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
