@@ -1,5 +1,5 @@
 from src.aws.client import s3_client
-from src.aws.constants import PRESIGNED_URL_EXP
+from src.aws.constants import S3Constants
 from src.config import settings
 
 
@@ -23,7 +23,7 @@ class S3Bucket:
         url = self.__client.generate_presigned_url(
             ClientMethod="get_object",
             Params={"Bucket": settings.BUCKET_NAME, "Key": key},
-            ExpiresIn=PRESIGNED_URL_EXP,
+            ExpiresIn=S3Constants.PRESIGNED_URL_EXPIRE.value
         )
         return url
 
