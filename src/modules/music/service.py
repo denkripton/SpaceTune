@@ -8,6 +8,7 @@ from src.modules.auth.repositories.user import UserRepository
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.creation import TrackCreationSchema
+from src.modules.music.schemas.track.media import MediaURLsSchema
 
 from src.aws.utils.actions import bucket_manager
 from src.modules.music.config import logger
@@ -140,10 +141,12 @@ class TrackService:
             released=datetime.strftime(existing_track.created_at, "%Y-%m-%d"),
         )
 
-        track = bucket_manager.presigned_url(key=existing_track.track_url)
-        photo = bucket_manager.presigned_url(key=existing_track.photo_url)
+        audio = bucket_manager.presigned_url(key=existing_track.track_url)
+        image = bucket_manager.presigned_url(key=existing_track.photo_url)
 
-        return {"metadata": metadata, "audio": track, "image": photo}
+        media = MediaURLsSchema(audio=audio, image=image)
+
+        return {"metadata": metadata, "media": media}
 
     async def get_my_tracks(self, user_id):
 
@@ -163,8 +166,7 @@ class TrackService:
                         duration=track.duration,
                         released=datetime.strftime(track.created_at, "%Y-%m-%d"),
                     ),
-                    audio=audio,
-                    image=image,
+                    media=MediaURLsSchema(audio=audio, image=image),
                 )
             )
 
