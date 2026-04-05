@@ -6,8 +6,8 @@ from src.dependencies import get_error
 from src.modules.auth.dependencies import get_user_service, get_current_user
 from src.modules.auth.service import UserService
 
-from src.modules.auth.schemas.profile.profile_creation import ProfileCreationSchema
-from src.modules.auth.schemas.profile.profile_read import UserProfileReadSchema
+from src.modules.auth.schemas.profile.creation import ProfileCreationSchema
+from src.modules.auth.schemas.profile.read import UserProfileReadSchema
 
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.schemas.user.login import UserLoginSchema
