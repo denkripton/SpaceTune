@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repository import ABCRepository
+from src.utils.interfaces.repository import ABCRepository
 
 
 class SQLAlchemyRepository(ABCRepository):
