@@ -1,10 +1,11 @@
+from typing import Callable
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException
-from typing import Callable
 
 from src.exceptions import ServiceError
 from src.config import logger
-from src.databases.sql_db import AsyncSessionLocal
+from src.databases import AsyncSessionLocal
 
 
 async def get_session() -> AsyncSession:

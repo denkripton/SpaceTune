@@ -1,8 +1,9 @@
 import uuid
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.repository import ABCRepository
+from src.utils.interfaces.repository import ABCRepository
 
 
 class SQLAlchemyRepository(ABCRepository):
@@ -23,7 +24,7 @@ class SQLAlchemyRepository(ABCRepository):
         obj = data.scalars().first()
         return obj
     
-    async def get_many(self, skip: int = 0, limit: int = 10, **kwargs):
+    async def get_many(self, skip: int = 0, limit: int = None, **kwargs):
         conditions = []
 
         for key, value in kwargs.items():
