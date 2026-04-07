@@ -1,4 +1,4 @@
-from src.repositories.postgres import SQLAlchemyRepository
+from src.repositories import SQLAlchemyRepository
 from src.modules.auth.models import User
 
 

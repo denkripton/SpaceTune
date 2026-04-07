@@ -1,6 +1,6 @@
 import uuid
 
-from src.repositories.postgres import SQLAlchemyRepository
+from src.repositories import SQLAlchemyRepository
 from src.modules.music.models import Grade
 
 

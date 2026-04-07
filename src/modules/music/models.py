@@ -12,7 +12,7 @@ from sqlalchemy import (
     BigInteger,
 )
 
-from src.databases.sql_db import Base
+from src.databases import Base
 
 
 class Grade(Base):

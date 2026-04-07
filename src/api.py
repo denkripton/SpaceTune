@@ -1,9 +1,8 @@
 from fastapi import FastAPI
-from uvicorn import Server, Config
 
 from src.utils.interfaces.application import Application
-from src.modules.auth.router import user_router
-from src.modules.music.router import music_router
+from src.modules.auth import user_router
+from src.modules.music import music_router
 from src.utils.metadata import (
     contact,
     description,

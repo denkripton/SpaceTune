@@ -10,11 +10,10 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
 
-from src.aws.utils.actions import bucket_manager
+from src.aws import bucket_manager
 from src.modules.music.config import logger
-from src.modules.music.utils.duration import count_duration
-from src.modules.music.utils.count_avg import count_avg
-from src.modules.auth.utils.hash_generation import pw_manager
+from src.modules.music.utils import count_duration, count_avg
+from src.modules.auth.utils import pw_manager
 from src.exceptions import ServiceError
 
 

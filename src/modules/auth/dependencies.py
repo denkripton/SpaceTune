@@ -6,7 +6,7 @@ from src.modules.auth.service import UserService
 from src.modules.auth.repositories.profile import ProfileRepository
 from src.modules.auth.repositories.user import UserRepository
 from src.dependencies import RepoFactory
-from src.modules.auth.utils.jwt import JWT
+from src.modules.auth.utils import JWT
 
 
 user_repository = RepoFactory(repo=UserRepository)

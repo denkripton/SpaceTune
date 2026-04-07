@@ -1,6 +1,6 @@
 from fastapi import Depends
 
-from src.modules.auth.dependencies import user_repository
+from src.modules.auth import user_repository
 from src.modules.auth.repositories.user import UserRepository
 from src.modules.music.service import TrackService
 from src.modules.music.repositories.track import TrackRepository
