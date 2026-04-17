@@ -4,7 +4,7 @@ from src.modules.auth.dependencies import (
     get_user_service,
     get_current_user,
 )
-from src.modules.auth.router import user_router
+
 from src.modules.auth.service import UserService
 
 __all__ = [
@@ -12,6 +12,5 @@ __all__ = [
     "profile_repository",
     "get_user_service",
     "get_current_user",
-    "user_router",
     "UserService",
 ]

@@ -3,9 +3,10 @@ from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from src.databases.sql_db import Base
-from src.config import SQLALCHEMY_DATABASE_URL
-from src.modules.auth.models import UserProfile, User
+from src.config import settings
+from src.modules.auth.models import User
 from src.modules.music.models import Grade, Track
+from src.modules.profile.models import Profile
 
 
 
@@ -19,7 +20,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL + "?async_fallback=True")
+config.set_main_option("sqlalchemy.url", settings.DB_URL + "?async_fallback=True")
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel

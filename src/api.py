@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 
 from src.utils.interfaces.application import Application
-from src.modules.auth import user_router
-from src.modules.music import music_router
+from src.modules import profile_router, music_router, user_router
 from src.utils.metadata import (
     contact,
     description,
@@ -24,7 +23,7 @@ class API(Application):
         self.openapi_url = openapi_url
         self.tags_metadata = tags_metadata
         self.contact = contact
-        self.routers = [user_router, music_router]
+        self.routers = [user_router, music_router, profile_router]
 
     def create(self):
         self.app = FastAPI(
