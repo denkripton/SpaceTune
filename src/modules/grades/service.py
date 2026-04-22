@@ -37,7 +37,13 @@ class GradeService:
         )
 
         if existing_grade is not None:
-            raise ServiceError(code=422, msg="You placed grade already")
+            existing_grade.grade = user_grade
+            try:
+                await self.__grade_repo.session.commit()
+            except Exception as e:
+                await self.__grade_repo.session.rollback()
+                logger.warning(e)
+            return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
 
         data = {
             "grade": user_grade,
