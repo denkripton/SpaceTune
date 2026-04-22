@@ -157,6 +157,15 @@ class TrackService:
         for track in tracks:
             audio = bucket_manager.presigned_url(key=track.track_url)
             image = bucket_manager.presigned_url(key=track.photo_url)
+
+            grades = await self.__grade_repo.get_many(track_id=track.id)
+            grades_arr = []
+
+            for g in grades:
+                grades_arr.append(g.grade)
+
+            avg_grade = count_avg(arr=grades_arr)
+
             list_to_return.append(
                 TrackMetadataReadShema(
                     metadata=TrackReadSchema(
@@ -164,6 +173,8 @@ class TrackService:
                         name=track.name,
                         artists=track.artists,
                         duration=track.duration,
+                        average_grade=avg_grade,
+                        number_of_ratings=len(grades_arr),
                         released=datetime.strftime(track.created_at, "%Y-%m-%d"),
                     ),
                     media=MediaURLsSchema(audio=audio, image=image),
