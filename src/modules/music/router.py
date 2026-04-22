@@ -52,32 +52,6 @@ async def my_tracks_get(
 
 
 @music_router.post(
-    "/track/grate",
-    summary="Place grade (Protected)",
-    description="Give grade for a track",
-    tags=["Grades"],
-    responses={
-        401: {"model": User401},
-        422: {"model": Union[Track422, User422, Grade422]},
-    },
-)
-async def place_grade(
-    track_name: str,
-    owner_name: str,
-    grade: int = Form(ge=1, le=10),
-    user_id: str = Depends(get_current_user),
-    service: TrackService = Depends(get_track_service),
-):
-    return await get_error(
-        service.grade_track,
-        user_id=user_id,
-        track_name=track_name,
-        owner_name=owner_name,
-        user_grade=grade,
-    )
-
-
-@music_router.post(
     "/track/add",
     summary="Create track (Protected)",
     tags=["Track CRUD's"],

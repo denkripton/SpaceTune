@@ -1,7 +1,7 @@
 import uuid
 
 from src.repositories import SQLAlchemyRepository
-from src.modules.music.models import Grade
+from src.modules.grades.models import Grade
 
 
 class GradeRepository(SQLAlchemyRepository):

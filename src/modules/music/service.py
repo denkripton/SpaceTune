@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
 
-from src.modules.music.repositories.track import TrackRepository
-from src.modules.music.repositories.grade import GradeRepository
+from src.modules.music.repository import TrackRepository
+from src.modules.grades.repository import GradeRepository
 from src.modules.auth.repository import UserRepository
 
 from src.modules.music.schemas.track.read import TrackReadSchema
