@@ -70,6 +70,22 @@ async def login_user(
     return user
 
 
+@user_router.delete(
+    "/logout",
+    summary="Quit your account",
+    tags=["Authentication"],
+    description="Logout user",
+)
+async def logout_user(response: Response):
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return {"message": "Loged out successfully"}
+
+
 @user_router.patch(
     "/me/update",
     summary="Update username (Protected)",
