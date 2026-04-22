@@ -136,7 +136,8 @@ class TrackService:
             name=existing_track.name,
             artists=existing_track.artists,
             duration=existing_track.duration,
-            grades=avg_grade,
+            average_grade=avg_grade,
+            number_of_ratings=len(grades_arr),
             released=datetime.strftime(existing_track.created_at, "%Y-%m-%d"),
         )
 
