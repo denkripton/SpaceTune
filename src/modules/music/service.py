@@ -10,6 +10,8 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
 
+from src.modules.music.enums import MediaTypes
+
 from src.aws import bucket_manager
 from src.modules.music.config import logger
 from src.modules.music.utils import count_duration, count_avg
@@ -58,26 +60,34 @@ class TrackService:
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
-        try:
-            track = await self.__track_repo.create(**data)
-            await self.__track_repo.session.commit()
-            await self.__track_repo.session.refresh(track)
-        except Exception as e:
-            await self.__track_repo.session.rollback()
-            bucket_manager.delete_file(key=existing_track.track_url)
-            bucket_manager.delete_file(key=existing_track.photo_url)
-            logger.warning(e)
+        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid audio file type")
 
         bucket_manager.upload_file(
             file=music_file.file,
             file_type=music_file.content_type,
             key=track_aws_key,
         )
+
+        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid audio file type")
+
         bucket_manager.upload_file(
             file=image_file.file,
             file_type=image_file.content_type,
             key=image_aws_key,
         )
+
+        try:
+            track = await self.__track_repo.create(**data)
+            await self.__track_repo.session.commit()
+            await self.__track_repo.session.refresh(track)
+        except Exception as e:
+            await self.__track_repo.session.rollback()
+            bucket_manager.delete_file(key=track_aws_key)
+            bucket_manager.delete_file(key=image_aws_key)
+            logger.warning(e)
+
 
         metadata = TrackReadSchema(
             id=track.id,
