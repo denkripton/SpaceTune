@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 from fastapi import APIRouter, Depends, UploadFile, Form, File
 
@@ -61,7 +61,7 @@ async def my_tracks_get(
 )
 async def add_track(
     name: str = Form(),
-    artists: list[str] = Form(),
+    artists: List = Form(default=[]),
     music_file: UploadFile = File(),
     image_file: UploadFile = File(),
     user_id: str = Depends(get_current_user),
