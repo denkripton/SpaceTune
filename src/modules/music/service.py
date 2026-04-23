@@ -70,7 +70,7 @@ class TrackService:
         )
 
         if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid audio file type")
+            raise ServiceError(code=422, msg="Invalid image file type")
 
         bucket_manager.upload_file(
             file=image_file.file,
