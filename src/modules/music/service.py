@@ -10,7 +10,7 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
 
-from src.modules.music.enums import MediaTypes
+from src.modules.music.utils.enums import MediaTypes
 
 from src.aws import bucket_manager
 from src.modules.music.config import logger
