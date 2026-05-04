@@ -13,7 +13,6 @@ from src.modules.music.schemas.track.creation import TrackCreationSchema
 
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_422 import User422
 from src.modules.music.schemas.exceptions.grade_422 import Grade422
 
@@ -84,16 +83,14 @@ async def add_track(
     description="Delete your track",
     responses={
         401: {"model": User401},
-        403: {"model": Password403},
         422: {"model": Union[Track422, User422]},
     },
 )
 async def track_delete(
     track_name: str,
-    password: str,
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
 ):
     return await get_error(
-        service.delete_track, user_id=user_id, password=password, track_name=track_name
+        service.delete_track, user_id=user_id, track_name=track_name
     )

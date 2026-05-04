@@ -99,16 +99,11 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user_id, password, track_name):
+    async def delete_track(self, user_id, track_name):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-
-        password_check = pw_manager.check_password(password, existing_user.password)
-
-        if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
 
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=track_name
