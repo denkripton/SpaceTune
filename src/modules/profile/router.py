@@ -13,7 +13,6 @@ from src.modules.profile.schemas.read import ProfileReadSchema
 from src.modules.auth.schemas.user.read import UserRead
 
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_422 import User422
 from src.modules.profile.schemas.exceptions.profile_422 import Profile422
 
@@ -29,7 +28,6 @@ profile_router = APIRouter(prefix="/profile")
     response_model=ProfileCreationSchema,
     responses={
         401: {"model": User401},
-        403: {"model": Password403},
         422: {"model": Union[Profile422, User422]},
     },
 )
@@ -82,13 +80,11 @@ async def get_user_profile(
     description="Delete your profile",
     responses={
         401: {"model": User401},
-        403: {"model": Password403},
         422: {"model": Union[Profile422, User422]},
     },
 )
 async def delete_my_profile(
-    password: str,
     user_id: str = Depends(get_current_user),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await get_error(service.delete_profile, user_id=user_id, password=password)
+    return await get_error(service.delete_profile, user_id=user_id)

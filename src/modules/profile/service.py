@@ -59,16 +59,11 @@ class ProfileService:
 
         return await assemble(user=existing_user, repo=self.profile_repo)
 
-    async def delete_profile(self, user_id, password):
+    async def delete_profile(self, user_id):
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-
-        password_check = pw_manager.check_password(password, existing_user.password)
-
-        if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
 
         existing_profile = await self.profile_repo.get_one(user_id=existing_user.id)
 
