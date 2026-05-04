@@ -22,7 +22,7 @@ async def get_error(method: Callable, *args, **kwargs):
     except ServiceError as service_e:
         raise HTTPException(status_code=service_e.status_code, detail=service_e.message)
     except Exception as e:
-        logger.critical(e)
+        raise HTTPException(status_code=500, detail=e.message)
 
 
 class RepoFactory:
