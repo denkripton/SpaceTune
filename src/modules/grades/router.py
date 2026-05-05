@@ -17,7 +17,7 @@ grade_router = APIRouter(prefix="/grades")
 
 
 @grade_router.post(
-    "/{track_name}/{owner_name}",
+    "/{track_id}",
     summary="Place grade (Protected)",
     description="Give grade for a track",
     tags=["Grades CRUD's"],
@@ -27,8 +27,7 @@ grade_router = APIRouter(prefix="/grades")
     },
 )
 async def place_grade(
-    track_name: str,
-    owner_name: str,
+    track_id: str,
     grade: int = Form(ge=1, le=10),
     user_id: str = Depends(get_current_user),
     service: GradeService = Depends(get_grade_service),
@@ -36,7 +35,6 @@ async def place_grade(
     return await get_error(
         service.grade_track,
         user_id=user_id,
-        track_name=track_name,
-        owner_name=owner_name,
+        track_id=track_id,
         user_grade=grade,
     )

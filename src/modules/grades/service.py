@@ -18,15 +18,15 @@ class GradeService:
         self.__grade_repo = grade_repo
 
     async def grade_track(
-        self, user_id, track_name: str, owner_name: str, user_grade: int
+        self, user_id, track_id, user_grade: int
     ):
-        existing_owner = await self.__user_repo.get_one(username=owner_name)
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
 
-        if existing_owner is None:
+        if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
         existing_track = await self.__track_repo.get_one(
-            name=track_name, owner_id=existing_owner.id
+            id=track_id
         )
 
         if existing_track is None:
@@ -43,7 +43,7 @@ class GradeService:
             except Exception as e:
                 await self.__grade_repo.session.rollback()
                 logger.warning(e)
-            return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
+            return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
 
         data = {
             "grade": user_grade,
@@ -59,4 +59,4 @@ class GradeService:
             await self.__grade_repo.session.rollback()
             logger.warning(e)
 
-        return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
+        return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
