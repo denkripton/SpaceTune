@@ -121,9 +121,9 @@ class TrackService:
             logger.warning(e)
         return "Track has been deleted succesfuly"
 
-    async def get_track(self, track_name):
+    async def get_track(self, track_id):
 
-        existing_track = await self.__track_repo.get_one(name=track_name)
+        existing_track = await self.__track_repo.get_by_id(id=track_id)
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 

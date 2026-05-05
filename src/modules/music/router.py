@@ -19,7 +19,7 @@ music_router = APIRouter(prefix="/music")
 
 
 @music_router.get(
-    "/track/{track_name}",
+    "/track/{track_id}",
     summary="Get track",
     tags=["Track CRUD's"],
     description="Get track with metadata",
@@ -27,9 +27,9 @@ music_router = APIRouter(prefix="/music")
     responses={422: {"model": Track422}},
 )
 async def track_get(
-    track_name: str, service: TrackService = Depends(get_track_service)
+    track_id: str, service: TrackService = Depends(get_track_service)
 ):
-    return await get_error(service.get_track, track_name=track_name)
+    return await get_error(service.get_track, track_id=track_id)
 
 
 @music_router.get(
