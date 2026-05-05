@@ -11,7 +11,6 @@ Spacetune is a comprehensive music management platform API.
 ## Technologies
 - FastAPI for high-performance async API
 - PostgreSQL for reliable data persistence
-- Redis for caching and session management
 - AWS S3 for audio file storage
 - JWT for secure authentication
 """
