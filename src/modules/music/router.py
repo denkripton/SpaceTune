@@ -14,7 +14,6 @@ from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.music.schemas.exceptions.grade_422 import Grade422
 
 music_router = APIRouter(prefix="/music")
 

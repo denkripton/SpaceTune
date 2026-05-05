@@ -10,7 +10,6 @@ from src.modules.auth.dependencies import get_current_user
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.music.schemas.exceptions.grade_422 import Grade422
 
 
 grade_router = APIRouter(prefix="/grades")
@@ -23,7 +22,7 @@ grade_router = APIRouter(prefix="/grades")
     tags=["Grades CRUD's"],
     responses={
         401: {"model": User401},
-        422: {"model": Union[Track422, User422, Grade422]},
+        422: {"model": Union[Track422, User422]},
     },
 )
 async def place_grade(
