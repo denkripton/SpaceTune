@@ -34,7 +34,7 @@ async def track_get(
 
 @music_router.get(
     "/tracks/my",
-    summary="Get tracks (Protected)",
+    summary="Get your tracks (Protected)",
     tags=["Track CRUD's"],
     description="Get your tracks with their metadata",
     response_model=list[TrackMetadataReadShema],
