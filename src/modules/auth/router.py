@@ -6,19 +6,17 @@ from src.dependencies import get_error
 from src.modules.auth import get_user_service, get_current_user
 from src.modules.auth.service import UserService
 
-from src.modules.profile.schemas.creation import ProfileCreationSchema
 from src.modules.profile.schemas.read import ProfileReadSchema
 
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
-from src.modules.auth.schemas.user.update import UserUpdateSchema
 from src.modules.auth.schemas.auth.read import AuthReadSchema
 
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.profile.schemas.exceptions.profile_422 import Profile422
+
 
 user_router = APIRouter(prefix="/users")
 
@@ -99,8 +97,8 @@ async def logout_user(response: Response):
     },
 )
 async def update_me(
-    data: UserUpdateSchema,
+    new_username: str,
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await get_error(service.update_username, user_id=user_id, data=data)
+    return await get_error(service.update_username, user_id=user_id, new_username=new_username)

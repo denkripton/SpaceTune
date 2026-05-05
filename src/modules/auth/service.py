@@ -4,7 +4,6 @@ from src.exceptions import ServiceError
 
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
-from src.modules.auth.schemas.user.update import UserUpdateSchema
 
 from src.modules.profile.repository import ProfileRepository
 from src.modules.auth.repository import UserRepository
@@ -62,24 +61,14 @@ class UserService:
             "refresh": refresh,
         }
 
-    async def update_username(self, user_id, data: UserUpdateSchema):
+    async def update_username(self, user_id, new_username):
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        password_check = pw_manager.check_password(
-            data.password, existing_user.password
-        )
 
-        if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
-
-        data = data.model_dump(
-            exclude={"password"}, exclude_none=True, exclude_unset=True
-        )
-
-        existing_user.username = data["username"]
+        existing_user.username = new_username
 
         await self.repo.session.commit()
         await self.repo.session.refresh(existing_user)
