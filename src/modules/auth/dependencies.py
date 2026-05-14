@@ -3,8 +3,8 @@ from typing import Optional
 from fastapi import Depends, Request, Response, HTTPException
 
 from src.modules.auth.service import UserService
-from src.modules.auth.repositories.profile import ProfileRepository
-from src.modules.auth.repositories.user import UserRepository
+from src.modules.profile.repository import ProfileRepository
+from src.modules.auth.repository import UserRepository
 from src.dependencies import RepoFactory
 from src.modules.auth.utils import JWT
 
@@ -34,7 +34,7 @@ async def get_current_user(
     request: Request, response: Response, jwt: JWT = Depends(get_jwt_service)
 ):
     auth_header: Optional[str] = request.headers.get("Authorization")
-    token = auth_header.replace("Bearer", "") if auth_header else None
+    token = auth_header.replace("Bearer ", "") if auth_header else None
 
     payload = jwt.validate_token(token)
 

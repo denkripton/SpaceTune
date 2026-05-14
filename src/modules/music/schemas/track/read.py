@@ -9,5 +9,6 @@ from src.modules.music.schemas.track.creation import TrackCreationSchema
 class TrackReadSchema(TrackCreationSchema):
     id: uuid.UUID
     duration: int
-    grades: float = Field(default=0)
+    average_grade: float = Field(default=0)
+    number_of_ratings: int = Field(default=0)
     released: date

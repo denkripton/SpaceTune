@@ -6,19 +6,17 @@ from src.dependencies import get_error
 from src.modules.auth import get_user_service, get_current_user
 from src.modules.auth.service import UserService
 
-from src.modules.auth.schemas.profile.creation import ProfileCreationSchema
-from src.modules.auth.schemas.profile.read import UserProfileReadSchema
+from src.modules.profile.schemas.read import ProfileReadSchema
 
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
-from src.modules.auth.schemas.user.update import UserUpdateSchema
 from src.modules.auth.schemas.auth.read import AuthReadSchema
 
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.auth.schemas.exceptions.profile_422 import Profile422
+
 
 user_router = APIRouter(prefix="/users")
 
@@ -70,58 +68,20 @@ async def login_user(
     return user
 
 
-@user_router.post(
-    "/me/profile/create",
-    summary="Profile creation (Protected)",
-    tags=["Profile CRUD's"],
-    description="Create your profile",
-    response_model=ProfileCreationSchema,
-    responses={
-        401: {"model": User401},
-        403: {"model": Password403},
-        422: {"model": Union[Profile422, User422]},
-    },
+@user_router.delete(
+    "/logout",
+    summary="Quit your account",
+    tags=["Authentication"],
+    description="Logout user",
 )
-async def create_my_profile(
-    data: ProfileCreationSchema,
-    service: UserService = Depends(get_user_service),
-    user_id: str = Depends(get_current_user),
-):
-    return await get_error(service.create_profile, user_id=user_id, data=data)
-
-
-@user_router.get(
-    "/me/profile",
-    summary="Read your profile (Protected)",
-    tags=["Profile CRUD's"],
-    description="Get your profile",
-    response_model=Union[UserProfileReadSchema, UserRead],
-    responses={
-        401: {"model": User401},
-        422: {"model": User422},
-    },
-)
-async def get_my_profile(
-    user_id: str = Depends(get_current_user),
-    service: UserService = Depends(get_user_service),
-):
-    return await get_error(service.get_my_profile, user_id=user_id)
-
-
-@user_router.get(
-    "/{username}/profile",
-    summary="Read user profile",
-    tags=["Profile CRUD's"],
-    description="Get user profile",
-    response_model=Union[UserProfileReadSchema, UserRead],
-    responses={
-        422: {"model": User422},
-    },
-)
-async def get_user_profile(
-    username: str, service: UserService = Depends(get_user_service)
-):
-    return await get_error(service.get_user_profile, username=username)
+async def logout_user(response: Response):
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return {"message": "Loged out successfully"}
 
 
 @user_router.patch(
@@ -129,7 +89,7 @@ async def get_user_profile(
     summary="Update username (Protected)",
     tags=["Profile CRUD's"],
     description="Change your username",
-    response_model=Union[UserProfileReadSchema, UserRead],
+    response_model=Union[ProfileReadSchema, UserRead],
     responses={
         401: {"model": User401},
         403: {"model": Password403},
@@ -137,27 +97,8 @@ async def get_user_profile(
     },
 )
 async def update_me(
-    data: UserUpdateSchema,
+    new_username: str,
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await get_error(service.update_username, user_id=user_id, data=data)
-
-
-@user_router.delete(
-    "/me/profile/delete",
-    summary="Delete profile (Protected)",
-    tags=["Profile CRUD's"],
-    description="Delete your profile",
-    responses={
-        401: {"model": User401},
-        403: {"model": Password403},
-        422: {"model": Union[Profile422, User422]},
-    },
-)
-async def delete_my_profile(
-    password: str,
-    user_id: str = Depends(get_current_user),
-    service: UserService = Depends(get_user_service),
-):
-    return await get_error(service.delete_profile, user_id=user_id, password=password)
+    return await get_error(service.update_username, user_id=user_id, new_username=new_username)

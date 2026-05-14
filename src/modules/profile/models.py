@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import Optional
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
@@ -7,15 +7,17 @@ from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
 from src.databases import Base
 
 
-class User(Base):
-    __tablename__ = "users"
+class Profile(Base):
+    __tablename__ = "profiles"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
     )
-    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[bytes] = mapped_column(nullable=False)
-    email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+
+    birth_date: Mapped[Date] = mapped_column(Date)
+    bio: Mapped[Optional[str]] = mapped_column(Text)
+    country: Mapped[Optional[str]] = mapped_column(String(50))
+    phone_number: Mapped[Optional[str]] = mapped_column(String(50))
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -27,6 +29,6 @@ class User(Base):
         nullable=False,
     )
 
-    profile: Mapped["Profile"] = relationship(back_populates="user")
-    track: Mapped[List["Track"]] = relationship(back_populates="owner")
-    user_grades_conn: Mapped[List["Grade"]] = relationship(back_populates="user_conn")
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+
+    user: Mapped["User"] = relationship(back_populates="profile")

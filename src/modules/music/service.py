@@ -1,14 +1,16 @@
 import uuid
 from datetime import datetime
 
-from src.modules.music.repositories.track import TrackRepository
-from src.modules.music.repositories.grade import GradeRepository
-from src.modules.auth.repositories.user import UserRepository
+from src.modules.music.repository import TrackRepository
+from src.modules.grades.repository import GradeRepository
+from src.modules.auth.repository import UserRepository
 
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
+
+from src.modules.music.utils.enums import MediaTypes
 
 from src.aws import bucket_manager
 from src.modules.music.config import logger
@@ -58,26 +60,34 @@ class TrackService:
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
-        try:
-            track = await self.__track_repo.create(**data)
-            await self.__track_repo.session.commit()
-            await self.__track_repo.session.refresh(track)
-        except Exception as e:
-            await self.__track_repo.session.rollback()
-            bucket_manager.delete_file(key=existing_track.track_url)
-            bucket_manager.delete_file(key=existing_track.photo_url)
-            logger.warning(e)
+        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid audio file type")
 
         bucket_manager.upload_file(
             file=music_file.file,
             file_type=music_file.content_type,
             key=track_aws_key,
         )
+
+        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid image file type")
+
         bucket_manager.upload_file(
             file=image_file.file,
             file_type=image_file.content_type,
             key=image_aws_key,
         )
+
+        try:
+            track = await self.__track_repo.create(**data)
+            await self.__track_repo.session.commit()
+            await self.__track_repo.session.refresh(track)
+        except Exception as e:
+            await self.__track_repo.session.rollback()
+            bucket_manager.delete_file(key=track_aws_key)
+            bucket_manager.delete_file(key=image_aws_key)
+            logger.warning(e)
+
 
         metadata = TrackReadSchema(
             id=track.id,
@@ -89,16 +99,11 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user_id, password, track_name):
+    async def delete_track(self, user_id, track_name):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-
-        password_check = pw_manager.check_password(password, existing_user.password)
-
-        if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
 
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=track_name
@@ -116,9 +121,9 @@ class TrackService:
             logger.warning(e)
         return "Track has been deleted succesfuly"
 
-    async def get_track(self, track_name):
+    async def get_track(self, track_id):
 
-        existing_track = await self.__track_repo.get_one(name=track_name)
+        existing_track = await self.__track_repo.get_by_id(id=track_id)
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
@@ -136,7 +141,8 @@ class TrackService:
             name=existing_track.name,
             artists=existing_track.artists,
             duration=existing_track.duration,
-            grades=avg_grade,
+            average_grade=avg_grade,
+            number_of_ratings=len(grades_arr),
             released=datetime.strftime(existing_track.created_at, "%Y-%m-%d"),
         )
 
@@ -156,6 +162,15 @@ class TrackService:
         for track in tracks:
             audio = bucket_manager.presigned_url(key=track.track_url)
             image = bucket_manager.presigned_url(key=track.photo_url)
+
+            grades = await self.__grade_repo.get_many(track_id=track.id)
+            grades_arr = []
+
+            for g in grades:
+                grades_arr.append(g.grade)
+
+            avg_grade = count_avg(arr=grades_arr)
+
             list_to_return.append(
                 TrackMetadataReadShema(
                     metadata=TrackReadSchema(
@@ -163,6 +178,8 @@ class TrackService:
                         name=track.name,
                         artists=track.artists,
                         duration=track.duration,
+                        average_grade=avg_grade,
+                        number_of_ratings=len(grades_arr),
                         released=datetime.strftime(track.created_at, "%Y-%m-%d"),
                     ),
                     media=MediaURLsSchema(audio=audio, image=image),
@@ -170,41 +187,3 @@ class TrackService:
             )
 
         return list_to_return
-
-    async def grade_track(
-        self, user_id, track_name: str, owner_name: str, user_grade: int
-    ):
-        existing_owner = await self.__user_repo.get_one(username=owner_name)
-
-        if existing_owner is None:
-            raise ServiceError(code=422, msg="User does not exist")
-
-        existing_track = await self.__track_repo.get_one(
-            name=track_name, owner_id=existing_owner.id
-        )
-
-        if existing_track is None:
-            raise ServiceError(code=422, msg="Track does not exist")
-
-        existing_grade = await self.__grade_repo.get_one(
-            user_id=user_id, track_id=existing_track.id
-        )
-
-        if existing_grade is not None:
-            raise ServiceError(code=422, msg="You placed grade already")
-
-        data = {
-            "grade": user_grade,
-            "user_id": user_id,
-            "track_id": existing_track.id,
-        }
-
-        try:
-            grade = await self.__grade_repo.create(**data)
-            await self.__grade_repo.session.commit()
-            await self.__grade_repo.session.refresh(grade)
-        except Exception as e:
-            await self.__grade_repo.session.rollback()
-            logger.warning(e)
-
-        return f"You placed: {user_grade} to {track_name}, created by {existing_track.artists}"
