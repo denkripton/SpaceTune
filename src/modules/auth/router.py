@@ -1,10 +1,11 @@
 from typing import Union
 
 from fastapi import APIRouter, Depends, Response
+from fastapi.responses import RedirectResponse
 
 from src.dependencies import get_error
-from src.modules.auth import get_user_service, get_current_user
-from src.modules.auth.services import UserService
+from src.modules.auth import get_user_service, get_oauth_service, get_current_user
+from src.modules.auth.services import UserService, OAuthService
 
 from src.modules.profile.schemas.read import ProfileReadSchema
 
@@ -66,6 +67,17 @@ async def login_user(
     )
 
     return user
+
+
+@user_router.post(
+    "oauth/google",
+    summary="Google OAuth redirect",
+    tags=["Authentication"],
+    description="Redirect to Google login page",
+)
+async def google_login(service: OAuthService = Depends(get_oauth_service)):
+    url = service.get_redirect_url()
+    return RedirectResponse(url=url)
 
 
 @user_router.delete(
