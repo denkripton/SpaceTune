@@ -1,13 +1,12 @@
 from typing import Optional
 
-from fastapi import Depends, Request, Response, HTTPException
+from fastapi import Depends, HTTPException, Request, Response
 
-from src.modules.auth.services import UserService
-from src.modules.profile.repository import ProfileRepository
-from src.modules.auth.repository import UserRepository
 from src.dependencies import RepoFactory
+from src.modules.auth.repository import UserRepository
+from src.modules.auth.services import OAuthService, UserService
 from src.modules.auth.utils import JWT
-
+from src.modules.profile.repository import ProfileRepository
 
 user_repository = RepoFactory(repo=UserRepository)
 profile_repository = RepoFactory(repo=ProfileRepository)
@@ -27,7 +26,17 @@ class UserServiceFactory:
         return UserService(repo=user_repo, profile_repo=profile_repo, jwt=jwt)
 
 
+class OAuthServiceFactory:
+    def call(
+        self,
+        user_repo: UserRepository = Depends(user_repository),
+        jwt: JWT = Depends(get_jwt_service),
+    ):
+        return OAuthService(repo=user_repo, jwt=jwt)
+
+
 get_user_service = UserServiceFactory()
+get_oauth_service = OAuthServiceFactory()
 
 
 async def get_current_user(
