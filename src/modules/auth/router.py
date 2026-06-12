@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Response
 
 from src.dependencies import get_error
 from src.modules.auth import get_user_service, get_current_user
-from src.modules.auth.service import UserService
+from src.modules.auth.services import UserService
 
 from src.modules.profile.schemas.read import ProfileReadSchema
 

@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import Depends, Request, Response, HTTPException
 
-from src.modules.auth.service import UserService
+from src.modules.auth.services import UserService
 from src.modules.profile.repository import ProfileRepository
 from src.modules.auth.repository import UserRepository
 from src.dependencies import RepoFactory

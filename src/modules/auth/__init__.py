@@ -5,7 +5,7 @@ from src.modules.auth.dependencies import (
     get_current_user,
 )
 
-from src.modules.auth.service import UserService
+from src.modules.auth.services import UserService
 
 __all__ = [
     "user_repository",
