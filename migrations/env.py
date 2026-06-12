@@ -5,9 +5,9 @@ from sqlalchemy import pool
 from src.databases.sql_db import Base
 from src.config import settings
 from src.modules.auth.models import User
-from src.modules.music.models import Grade, Track
+from src.modules.music.models import Track
 from src.modules.profile.models import Profile
-
+from src.modules.grades.models import Grade
 
 
 
