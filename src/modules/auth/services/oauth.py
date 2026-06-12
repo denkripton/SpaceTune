@@ -28,10 +28,12 @@ class OAuthService:
 
         query = "&".join(result)
 
-        return f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
+        a = f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
+        print(a)
+        return a
 
     async def _exchange_code(self, code: str):
-        async with httpx.AsyncClient as client:
+        async with httpx.AsyncClient() as client:
             response = await client.post(
                 self.GOOGLE_TOKEN_URL,
                 data={
@@ -47,7 +49,7 @@ class OAuthService:
         return response.json()
 
     async def _get_userinfo(self, access_token: str):
-        async with httpx.AsyncClient as client:
+        async with httpx.AsyncClient() as client:
             response = await client.get(
                 settings.GOOGLE_USERINFO_URL,
                 headers={"Authorization": f"Bearer {access_token}"},
@@ -58,18 +60,18 @@ class OAuthService:
 
     async def login(self, code: str):
         tokens = await self._exchange_code(code=code)
-        user_info = await self._get_userinfo[tokens["access_token"]]
+        user_info = await self._get_userinfo(tokens["access_token"])
 
         sub = user_info["sub"]
         email = user_info["email"]
         username = user_info.get("name", email.split("@")[0])[:20]
 
-        existing_user = await self.__repo.get_one(google_id=sub)
+        user = await self.__repo.get_one(google_id=sub)
 
-        if existing_user is None:
-            email_in_db = await self.__repo.get_by_email(email=email)
-            if email_in_db:
-                email_in_db.google_id = sub
+        if user is None:
+            user = await self.__repo.get_by_email(email=email)
+            if user:
+                user.google_id = sub
             else:
                 user = await self.__repo.create(
                     username=username,
@@ -81,8 +83,9 @@ class OAuthService:
             await self.__repo.session.commit()
             await self.__repo.session.refresh(user)
 
-        access = self.jwt.create_access_token(existing_user.id)
-        refresh = self.jwt.create_refresh_token(existing_user.id)
+        user.id = str(user.id)
+        access = self.__jwt.create_access_token(user.id)
+        refresh = self.__jwt.create_refresh_token(user.id)
 
         return {
             "access": access,

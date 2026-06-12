@@ -27,7 +27,7 @@ class UserServiceFactory:
 
 
 class OAuthServiceFactory:
-    def call(
+    def __call__(
         self,
         user_repo: UserRepository = Depends(user_repository),
         jwt: JWT = Depends(get_jwt_service),
