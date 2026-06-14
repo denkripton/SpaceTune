@@ -1,14 +1,15 @@
-import uuid
-
 from src.exceptions import ServiceError
 
-from src.modules.auth.schemas.user.login import UserLoginSchema
-from src.modules.auth.schemas.user.creation import UserCreateSchema
-
-from src.modules.profile.repository import ProfileRepository
 from src.modules.auth.repository import UserRepository
+
+from src.modules.auth.schemas.password import PasswordCreateSchema
+
+from src.modules.auth.schemas.user.creation import UserCreateSchema
+from src.modules.auth.schemas.user.login import UserLoginSchema
+
 from src.modules.auth.utils import JWT, pw_manager
 
+from src.modules.profile.repository import ProfileRepository
 from src.modules.profile.utils import assemble
 
 
@@ -61,12 +62,29 @@ class UserService:
             "refresh": refresh,
         }
 
-    async def update_username(self, user_id, new_username):
+    async def set_password(self, user_id, data: PasswordCreateSchema):
         existing_user = await self.repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
+        if existing_user.password is not None:
+            raise ServiceError(code=409, msg="User password already exists")
+
+        data = data.model_dump()
+
+        existing_user.password = pw_manager.hash_password(data["password"])
+
+        await self.repo.session.commit()
+        await self.repo.session.refresh(existing_user)
+
+        return "Password added successfully"
+
+    async def update_username(self, user_id, new_username):
+        existing_user = await self.repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise ServiceError(code=422, msg="User does not exist")
 
         existing_user.username = new_username
 

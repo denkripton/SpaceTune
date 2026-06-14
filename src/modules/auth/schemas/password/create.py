@@ -20,7 +20,7 @@ class PasswordCreateSchema(BaseSchema):
             )
         return password
 
-    @field_validator("confirm")
+    @field_validator("confirm_password")
     def check_passwords(cls, conf_password: str, info: ValidationInfo):
         if conf_password != info.data["password"]:
             raise ValueError("Password confirmation is invalid")
