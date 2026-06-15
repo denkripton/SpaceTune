@@ -9,7 +9,7 @@ from src.modules.auth.schemas.auth.read import AuthReadSchema
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.auth.schemas.password import PasswordCreateSchema
+from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCreateSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.read import UserRead
@@ -136,6 +136,24 @@ async def add_password(
     service: UserService = Depends(get_user_service),
 ):
     return await get_error(service.set_password, user_id=user_id, data=data)
+
+
+@user_router.put(
+    "/password/change",
+    summary="Change Password",
+    tags=["User CRUD's"],
+    description="Change existing password",
+    responses={
+        401: {"model": User401},
+        422: {"model": User422},
+    },
+)
+async def change_password(
+    data: PasswordChangeSchema,
+    user_id: str = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    return await get_error(service.change_password, user_id=user_id, data=data)
 
 
 @user_router.patch(
