@@ -3,6 +3,7 @@ import re
 from pydantic import field_validator, EmailStr, Field
 
 from src.utils.schemas.base_schema import BaseSchema
+from src.modules.auth.utils.password_validation import password_validation
 
 
 class UserCreateSchema(BaseSchema):
@@ -12,11 +13,4 @@ class UserCreateSchema(BaseSchema):
 
     @field_validator("password")
     def validate_password(cls, password: str) -> str:
-        if not re.fullmatch(
-            r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,64}$",
-            password,
-        ):
-            raise ValueError(
-                """Password is invalid. It must contain at least: one lowercase letter, one upper case letter, one digit, one special character. Length: 8-64"""
-            )
-        return password
+        return password_validation(password=password)
