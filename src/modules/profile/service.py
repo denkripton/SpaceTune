@@ -79,6 +79,11 @@ class ProfileService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
+        existing_username = await self.__user_repo.get_one(username=new_username)
+
+        if existing_username is not None:
+            raise ServiceError(code=422, msg="That username already taken")
+
         existing_user.username = new_username
 
         await self.__user_repo.session.commit()
