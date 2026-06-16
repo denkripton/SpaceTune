@@ -6,10 +6,8 @@ from src.dependencies import RepoFactory
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.services import OAuthService, UserService
 from src.modules.auth.utils import JWT
-from src.modules.profile.repository import ProfileRepository
 
 user_repository = RepoFactory(repo=UserRepository)
-profile_repository = RepoFactory(repo=ProfileRepository)
 
 
 def get_jwt_service() -> JWT:
@@ -20,10 +18,9 @@ class UserServiceFactory:
     def __call__(
         self,
         user_repo: UserRepository = Depends(user_repository),
-        profile_repo: ProfileRepository = Depends(profile_repository),
         jwt: JWT = Depends(get_jwt_service),
     ):
-        return UserService(repo=user_repo, profile_repo=profile_repo, jwt=jwt)
+        return UserService(repo=user_repo, jwt=jwt)
 
 
 class OAuthServiceFactory:

@@ -4,18 +4,14 @@ from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCrea
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.utils import JWT, pw_manager
-from src.modules.profile.repository import ProfileRepository
-from src.modules.profile.utils import assemble
 
 
 class UserService:
     def __init__(
         self,
         repo: UserRepository,
-        profile_repo: ProfileRepository,
         jwt: JWT,
     ):
-        self.__profile_repo = profile_repo
         self.__repo = repo
         self.__jwt = jwt
 
@@ -26,6 +22,11 @@ class UserService:
 
         if existing_user is not None:
             raise ServiceError(code=422, msg="User already exists")
+
+        existing_username = await self.__repo.get_one(username=data["username"])
+
+        if existing_username is not None:
+            raise ServiceError(code=422, msg="That username already taken")
 
         data["password"] = pw_manager.hash_password(data["password"])
 
@@ -99,5 +100,3 @@ class UserService:
         await self.__repo.session.refresh(existing_user)
 
         return "Password changed successfully"
-
-
