@@ -17,8 +17,11 @@ class PasswordChangeSchema(BaseSchema):
 
     @field_validator("new_password")
     def validate_new_password(cls, new, info: ValidationInfo):
-        password_validation(password=new)
 
         if "password" in info.data and new == info.data["password"]:
             raise ValueError("Password must be different")
         return new
+
+    @field_validator("new_password")
+    def validate_password(cls, new_password):
+        return password_validation(password=new_password)
