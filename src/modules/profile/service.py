@@ -72,3 +72,15 @@ class ProfileService:
         await self.__profile_repo.delete_obj(existing_profile.id)
         await self.__profile_repo.session.commit()
         return "Profile has been deleted succesfuly"
+
+    async def update_username(self, user_id, new_username):
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise ServiceError(code=422, msg="User does not exist")
+
+        existing_user.username = new_username
+
+        await self.__user_repo.session.commit()
+        await self.__user_repo.session.refresh(existing_user)
+        return await assemble(user=existing_user, repo=self.__profile_repo)

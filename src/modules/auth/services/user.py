@@ -100,14 +100,4 @@ class UserService:
 
         return "Password changed successfully"
 
-    async def update_username(self, user_id, new_username):
-        existing_user = await self.__repo.get_by_id(id=user_id)
 
-        if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
-
-        existing_user.username = new_username
-
-        await self.__repo.session.commit()
-        await self.__repo.session.refresh(existing_user)
-        return await assemble(user=existing_user, repo=self.__profile_repo)

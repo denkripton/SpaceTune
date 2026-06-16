@@ -16,6 +16,7 @@ from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
 from src.modules.profile.schemas.exceptions.profile_422 import Profile422
 
+from src.modules.auth.schemas.exceptions.password_403 import Password403
 
 profile_router = APIRouter(prefix="/profile")
 
@@ -37,6 +38,28 @@ async def create_my_profile(
     user_id: str = Depends(get_current_user),
 ):
     return await get_error(service.create_profile, user_id=user_id, data=data)
+
+
+@profile_router.patch(
+    "/me/update",
+    summary="Update username (Protected)",
+    tags=["Profile CRUD's"],
+    description="Change your username",
+    response_model=Union[ProfileReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        403: {"model": Password403},
+        422: {"model": User422},
+    },
+)
+async def update_me(
+    new_username: str,
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await get_error(
+        service.update_username, user_id=user_id, new_username=new_username
+    )
 
 
 @profile_router.get(

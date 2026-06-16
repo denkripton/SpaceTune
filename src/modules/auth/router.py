@@ -14,7 +14,6 @@ from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.services import OAuthService, UserService
-from src.modules.profile.schemas.read import ProfileReadSchema
 
 user_router = APIRouter(prefix="/users")
 
@@ -155,24 +154,3 @@ async def change_password(
 ):
     return await get_error(service.change_password, user_id=user_id, data=data)
 
-
-@user_router.patch(
-    "/me/update",
-    summary="Update username (Protected)",
-    tags=["Profile CRUD's"],
-    description="Change your username",
-    response_model=Union[ProfileReadSchema, UserRead],
-    responses={
-        401: {"model": User401},
-        403: {"model": Password403},
-        422: {"model": User422},
-    },
-)
-async def update_me(
-    new_username: str,
-    user_id: str = Depends(get_current_user),
-    service: UserService = Depends(get_user_service),
-):
-    return await get_error(
-        service.update_username, user_id=user_id, new_username=new_username
-    )
