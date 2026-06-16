@@ -15,28 +15,28 @@ class UserService:
         profile_repo: ProfileRepository,
         jwt: JWT,
     ):
-        self.profile_repo = profile_repo
-        self.repo = repo
-        self.jwt = jwt
+        self.__profile_repo = profile_repo
+        self.__repo = repo
+        self.__jwt = jwt
 
     async def register(self, data: UserCreateSchema):
         data = data.model_dump()
 
-        existing_user = await self.repo.get_by_email(data["email"])
+        existing_user = await self.__repo.get_by_email(data["email"])
 
         if existing_user is not None:
             raise ServiceError(code=422, msg="User already exists")
 
         data["password"] = pw_manager.hash_password(data["password"])
 
-        user = await self.repo.create(**data)
+        user = await self.__repo.create(**data)
 
-        await self.repo.session.commit()
-        await self.repo.session.refresh(user)
+        await self.__repo.session.commit()
+        await self.__repo.session.refresh(user)
         return user
 
     async def login(self, data: UserLoginSchema):
-        existing_user = await self.repo.get_by_email(data.email)
+        existing_user = await self.__repo.get_by_email(data.email)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -49,8 +49,8 @@ class UserService:
         if password_check is False:
             raise ServiceError(code=403, msg="Incorrect password")
 
-        access = self.jwt.create_access_token(existing_user.id)
-        refresh = self.jwt.create_refresh_token(existing_user.id)
+        access = self.__jwt.create_access_token(existing_user.id)
+        refresh = self.__jwt.create_refresh_token(existing_user.id)
 
         return {
             "access": access,
@@ -58,7 +58,7 @@ class UserService:
         }
 
     async def set_password(self, user_id, data: PasswordCreateSchema):
-        existing_user = await self.repo.get_by_id(id=user_id)
+        existing_user = await self.__repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -70,13 +70,13 @@ class UserService:
 
         existing_user.password = pw_manager.hash_password(data["password"])
 
-        await self.repo.session.commit()
-        await self.repo.session.refresh(existing_user)
+        await self.__repo.session.commit()
+        await self.__repo.session.refresh(existing_user)
 
         return "Password added successfully"
 
     async def change_password(self, user_id, data: PasswordChangeSchema):
-        existing_user = await self.repo.get_by_id(id=user_id)
+        existing_user = await self.__repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -95,19 +95,19 @@ class UserService:
 
         existing_user.password = pw_manager.hash_password(data["new_password"])
 
-        await self.repo.session.commit()
-        await self.repo.session.refresh(existing_user)
+        await self.__repo.session.commit()
+        await self.__repo.session.refresh(existing_user)
 
         return "Password changed successfully"
 
     async def update_username(self, user_id, new_username):
-        existing_user = await self.repo.get_by_id(id=user_id)
+        existing_user = await self.__repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
         existing_user.username = new_username
 
-        await self.repo.session.commit()
-        await self.repo.session.refresh(existing_user)
-        return await assemble(user=existing_user, repo=self.profile_repo)
+        await self.__repo.session.commit()
+        await self.__repo.session.refresh(existing_user)
+        return await assemble(user=existing_user, repo=self.__profile_repo)
