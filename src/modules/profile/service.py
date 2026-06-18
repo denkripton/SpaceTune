@@ -50,8 +50,8 @@ class ProfileService:
 
         return await assemble(user=existing_user, repo=self.__profile_repo)
 
-    async def get_user_profile(self, username):
-        existing_user = await self.__user_repo.get_one(username=username)
+    async def get_user_profile(self, user_id):
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")

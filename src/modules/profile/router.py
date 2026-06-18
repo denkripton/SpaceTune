@@ -81,19 +81,19 @@ async def get_my_profile(
 
 
 @profile_router.get(
-    "/{username}",
+    "/{user_id}",
     summary="Read user profile",
     tags=["Profile CRUD's"],
-    description="Get user profile",
+    description="Get user profile by user_id",
     response_model=Union[ProfileReadSchema, UserRead],
     responses={
         422: {"model": User422},
     },
 )
 async def get_user_profile(
-    username: str, service: ProfileService = Depends(get_profile_service)
+    user_id: str, service: ProfileService = Depends(get_profile_service)
 ):
-    return await get_error(service.get_user_profile, username=username)
+    return await get_error(service.get_user_profile, user_id=user_id)
 
 
 @profile_router.delete(
