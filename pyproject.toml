@@ -24,3 +24,17 @@ dependencies = [
     "sqlalchemy>=2.0.46",
     "uvicorn==0.38.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.0",
+    "respx>=0.21.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires real Postgres",
+]
