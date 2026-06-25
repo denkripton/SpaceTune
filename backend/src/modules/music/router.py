@@ -1,3 +1,5 @@
+import uuid
+
 from typing import Union, List
 
 from fastapi import APIRouter, Depends, UploadFile, Form, File
@@ -76,7 +78,7 @@ async def add_track(
 
 
 @music_router.delete(
-    "/track/delete",
+    "/track/{track_id}/delete",
     summary="Delete track (Protected)",
     tags=["Track CRUD's"],
     description="Delete your track",
@@ -86,10 +88,10 @@ async def add_track(
     },
 )
 async def track_delete(
-    track_name: str,
+    track_id: uuid.UUID,
     user_id: str = Depends(get_current_user),
     service: TrackService = Depends(get_track_service),
 ):
     return await get_error(
-        service.delete_track, user_id=user_id, track_name=track_name
+        service.delete_track, user_id=user_id, track_id=track_id
     )

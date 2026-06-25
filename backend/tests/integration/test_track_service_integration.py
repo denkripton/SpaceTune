@@ -8,7 +8,11 @@ from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.service import TrackService
-from tests.integration.conftest import create_real_track, create_real_user
+from tests.integration.conftest import (
+    create_real_grade,
+    create_real_track,
+    create_real_user,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -121,3 +125,25 @@ async def test_create_track_allows_same_name_for_different_owners(
         )
 
     assert result.name == "Shared Title"
+
+
+async def test_delete_track_removes_track_and_existing_grades(
+    db_session, track_service, mocked_bucket_manager
+):
+    owner = await create_real_user(db_session)
+    track = await create_real_track(db_session, owner_id=owner.id, name="Rated Track")
+    grade = await create_real_grade(db_session, user_id=owner.id, track_id=track.id)
+
+    with patch("src.modules.music.service.bucket_manager", mocked_bucket_manager):
+        result = await track_service.delete_track(
+            user_id=str(owner.id),
+            track_id=track.id,
+        )
+
+    assert result == "Track has been deleted succesfuly"
+
+    track_repo = TrackRepository(session=db_session)
+    grade_repo = GradeRepository(session=db_session)
+
+    assert await track_repo.get_by_id(track.id) is None
+    assert await grade_repo.get_by_id(grade.id) is None

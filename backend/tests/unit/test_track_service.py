@@ -237,7 +237,7 @@ async def test_delete_track_raises_422_when_user_does_not_exist(
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.delete_track(
-            user_id=str(uuid.uuid4()), track_name="Some Track"
+            user_id=str(uuid.uuid4()), track_id=uuid.uuid4()
         )
 
     assert exc_info.value.status_code == 422
@@ -253,7 +253,7 @@ async def test_delete_track_raises_422_when_track_does_not_exist(
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.delete_track(
-            user_id=str(owner.id), track_name="Ghost Track"
+            user_id=str(owner.id), track_id=uuid.uuid4()
         )
 
     assert exc_info.value.status_code == 422
@@ -273,7 +273,7 @@ async def test_delete_track_removes_both_files_from_s3_and_deletes_row(
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
         result = await track_service.delete_track(
-            user_id=str(owner.id), track_name="To Delete"
+            user_id=str(owner.id), track_id=existing_track.id
         )
 
     fake_bucket.delete_file.assert_any_call(key=existing_track.track_url)

@@ -30,7 +30,9 @@ class Grade(Base):
     )
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    track_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tracks.id"))
+    track_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tracks.id", ondelete="CASCADE")
+    )
 
     track_conn: Mapped["Track"] = relationship(back_populates="track_grades_conn")
     user_conn: Mapped["User"] = relationship(back_populates="user_grades_conn")

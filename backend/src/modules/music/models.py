@@ -38,7 +38,11 @@ class Track(Base):
         nullable=False,
     )
 
-    track_grades_conn: Mapped[List["Grade"]] = relationship(back_populates="track_conn")
+    track_grades_conn: Mapped[List["Grade"]] = relationship(
+        back_populates="track_conn",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
 

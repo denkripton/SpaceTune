@@ -99,17 +99,18 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user_id, track_name):
+    async def delete_track(self, user_id, track_id):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
         existing_track = await self.__track_repo.get_one(
-            owner_id=user_id, name=track_name
+            id=track_id, owner_id=user_id
         )
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
+        
         bucket_manager.delete_file(key=existing_track.track_url)
         bucket_manager.delete_file(key=existing_track.photo_url)
 
