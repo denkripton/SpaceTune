@@ -7,11 +7,11 @@ from src.modules.auth.utils import JWT
 
 
 class OAuthService:
+    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+
     def __init__(self, repo: UserRepository, jwt: JWT):
         self.__repo = repo
         self.__jwt = jwt
-
-    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
     def get_redirect_url(self):
         result = []
