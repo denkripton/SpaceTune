@@ -37,7 +37,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/backend /app/backend
 
-COPY docker/backend/entrypoint.sh /app/entrypoint.sh
+COPY backend/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 RUN chown -R appuser:appgroup /app
