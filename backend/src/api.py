@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from backend.src.utils import register_exception_handlers
 from src.utils.interfaces.application import Application
 from src.modules import profile_router, music_router, user_router, grade_router
 from src import (
@@ -37,6 +38,7 @@ class API(Application):
         )
         for router in self.routers:
             self.app.include_router(router=router)
+        register_exception_handlers(self.app)
 
 
 api = API()
