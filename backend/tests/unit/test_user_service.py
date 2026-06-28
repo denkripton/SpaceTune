@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.exceptions import ServiceError
+from backend.src.utils.exceptions import ServiceError
 from src.modules.auth.services.user import UserService
 from src.modules.auth.utils.hash_generation import pw_manager
 from tests.conftest import make_fake_user

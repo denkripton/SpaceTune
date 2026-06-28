@@ -5,7 +5,7 @@ import respx
 from httpx import Response
 
 from src.config import settings
-from src.exceptions import ServiceError
+from backend.src.utils.exceptions import ServiceError
 from src.modules.auth.services.oauth import OAuthService
 from tests.conftest import make_fake_user
 

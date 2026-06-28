@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.exceptions import ServiceError
+from backend.src.utils.exceptions import ServiceError
 from src.modules.music.service import TrackService
 from tests.conftest import make_fake_track, make_fake_user
 

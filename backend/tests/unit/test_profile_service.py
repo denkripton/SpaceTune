@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.exceptions import ServiceError
+from backend.src.utils.exceptions import ServiceError
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.profile.schemas.read import ProfileReadSchema
 from src.modules.profile.service import ProfileService
