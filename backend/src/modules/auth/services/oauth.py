@@ -1,7 +1,7 @@
 import httpx
 
 from src.config import settings
-from src.dependencies import ServiceError
+from src.utils.exceptions import ServiceError
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.utils import JWT
 

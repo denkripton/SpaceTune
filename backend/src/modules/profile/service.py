@@ -1,6 +1,6 @@
 import uuid
 
-from src.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 
 from src.modules.auth.repository import UserRepository
 from src.modules.profile.repository import ProfileRepository

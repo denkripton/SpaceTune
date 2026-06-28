@@ -1,4 +1,4 @@
-from backend.src.utils.routing.error_handling import ErrorHandlingRoute
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
 
 __all__ = ["ErrorHandlingRoute"]

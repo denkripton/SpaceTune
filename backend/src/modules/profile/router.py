@@ -2,10 +2,10 @@ from typing import Union
 
 from fastapi import APIRouter, Depends
 
-from src.dependencies import get_error
 from src.modules.profile.dependencies import get_profile_service
 from src.modules.auth.dependencies import get_current_user
 from src.modules.profile.service import ProfileService
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
 from src.modules.profile.schemas.creation import ProfileCreationSchema
 from src.modules.profile.schemas.read import ProfileReadSchema
@@ -18,7 +18,7 @@ from src.modules.profile.schemas.exceptions.profile_422 import Profile422
 
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 
-profile_router = APIRouter(prefix="/profile")
+profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
 
 
 @profile_router.post(
@@ -37,7 +37,7 @@ async def create_my_profile(
     service: ProfileService = Depends(get_profile_service),
     user_id: str = Depends(get_current_user),
 ):
-    return await get_error(service.create_profile, user_id=user_id, data=data)
+    return await service.create_profile(user_id=user_id, data=data)
 
 
 @profile_router.patch(
@@ -57,9 +57,7 @@ async def update_me(
     user_id: str = Depends(get_current_user),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await get_error(
-        service.update_username, user_id=user_id, new_username=new_username
-    )
+    return await service.update_username(user_id=user_id, new_username=new_username)
 
 
 @profile_router.get(
@@ -77,7 +75,7 @@ async def get_my_profile(
     user_id: str = Depends(get_current_user),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await get_error(service.get_my_profile, user_id=user_id)
+    return await service.get_my_profile(user_id=user_id)
 
 
 @profile_router.get(
@@ -93,7 +91,7 @@ async def get_my_profile(
 async def get_user_profile(
     user_id: str, service: ProfileService = Depends(get_profile_service)
 ):
-    return await get_error(service.get_user_profile, user_id=user_id)
+    return await service.get_user_profile(user_id=user_id)
 
 
 @profile_router.delete(
@@ -110,4 +108,4 @@ async def delete_my_profile(
     user_id: str = Depends(get_current_user),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await get_error(service.delete_profile, user_id=user_id)
+    return await service.delete_profile(user_id=user_id)

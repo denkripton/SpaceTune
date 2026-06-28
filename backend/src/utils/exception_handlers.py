@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from backend.src.utils.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 
 
 async def service_error_handler(request: Request, exc: ServiceError) -> JSONResponse:

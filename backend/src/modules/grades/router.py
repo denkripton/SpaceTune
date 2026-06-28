@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends, Form
 
 from src.modules.grades.service import GradeService
 from src.modules.grades.dependencies import get_grade_service
-from src.dependencies import get_error
 from src.modules.auth.dependencies import get_current_user
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
 from src.modules.music.schemas.exceptions.track_422 import Track422
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
 
 
-grade_router = APIRouter(prefix="/grades")
+grade_router = APIRouter(prefix="/grades", route_class=ErrorHandlingRoute)
 
 
 @grade_router.post(
@@ -31,8 +31,7 @@ async def place_grade(
     user_id: str = Depends(get_current_user),
     service: GradeService = Depends(get_grade_service),
 ):
-    return await get_error(
-        service.grade_track,
+    return await service.grade_track(
         user_id=user_id,
         track_id=track_id,
         user_grade=grade,

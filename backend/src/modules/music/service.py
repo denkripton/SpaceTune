@@ -16,7 +16,7 @@ from src.aws import bucket_manager
 from src.modules.music.config import logger
 from src.modules.music.utils import count_duration, count_avg
 from src.modules.auth.utils import pw_manager
-from src.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 
 
 class TrackService:

@@ -1,9 +1,6 @@
-from typing import Union
-
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import RedirectResponse
 
-from src.dependencies import get_error
 from src.modules.auth import get_current_user, get_oauth_service, get_user_service
 from src.modules.auth.schemas.auth.read import AuthReadSchema
 from src.modules.auth.schemas.exceptions.password_403 import Password403
@@ -14,8 +11,9 @@ from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.auth.services import OAuthService, UserService
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
-user_router = APIRouter(prefix="/users")
+user_router = APIRouter(prefix="/users", route_class=ErrorHandlingRoute)
 
 
 @user_router.post(
@@ -32,7 +30,7 @@ async def register_user(
     data: UserCreateSchema,
     service: UserService = Depends(get_user_service),
 ):
-    return await get_error(service.register, data=data)
+    return await service.register(data=data)
 
 
 @user_router.post(
@@ -51,7 +49,7 @@ async def login_user(
     response: Response,
     service: UserService = Depends(get_user_service),
 ):
-    user = await get_error(service.login, data=data)
+    user = await service.login(data=data)
 
     response.set_cookie(
         key="refresh_token",
@@ -89,7 +87,7 @@ async def google_login(service: OAuthService = Depends(get_oauth_service)):
 async def google_callback(
     code: str, response: Response, service: OAuthService = Depends(get_oauth_service)
 ):
-    user = await get_error(service.login, code=code)
+    user = await service.login(code=code)
 
     response.set_cookie(
         key="refresh_token",
@@ -134,7 +132,7 @@ async def add_password(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await get_error(service.set_password, user_id=user_id, data=data)
+    return await service.set_password(user_id=user_id, data=data)
 
 
 @user_router.put(
@@ -152,5 +150,4 @@ async def change_password(
     user_id: str = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ):
-    return await get_error(service.change_password, user_id=user_id, data=data)
-
+    return await service.change_password(user_id=user_id, data=data)

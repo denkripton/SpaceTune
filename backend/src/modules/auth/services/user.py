@@ -1,4 +1,4 @@
-from src.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCreateSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema

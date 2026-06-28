@@ -3,7 +3,7 @@ from src.modules.grades.repository import GradeRepository
 from src.modules.auth.repository import UserRepository
 
 from src.modules.music.config import logger
-from src.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 
 
 class GradeService:
