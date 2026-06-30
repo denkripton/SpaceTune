@@ -13,17 +13,32 @@ grade_repository = RepoFactory(repo=GradeRepository)
 
 
 class GradeServiceFactory:
-    def __call__(
+    def __init__(self, service_cls: type[GradeService] = GradeService):
+        self.service_cls = service_cls
+
+    def create(
         self,
-        track_repo: TrackRepository = Depends(track_repository),
-        user_repo: UserRepository = Depends(user_repository),
-        grade_repo: GradeRepository = Depends(grade_repository),
-    ):
-
-        service = GradeService(
-            track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo
+        track_repo: TrackRepository,
+        user_repo: UserRepository,
+        grade_repo: GradeRepository,
+    ) -> GradeService:
+        return self.service_cls(
+            track_repo=track_repo,
+            user_repo=user_repo,
+            grade_repo=grade_repo,
         )
-        return service
 
 
-get_grade_service = GradeServiceFactory()
+grade_service_factory = GradeServiceFactory()
+
+
+def get_grade_service(
+    track_repo: TrackRepository = Depends(track_repository),
+    user_repo: UserRepository = Depends(user_repository),
+    grade_repo: GradeRepository = Depends(grade_repository),
+) -> GradeService:
+    return grade_service_factory.create(
+        track_repo=track_repo,
+        user_repo=user_repo,
+        grade_repo=grade_repo,
+    )
