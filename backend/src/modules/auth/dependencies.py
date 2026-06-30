@@ -15,25 +15,45 @@ def get_jwt_service() -> JWT:
 
 
 class UserServiceFactory:
-    def __call__(
+    def __init__(self, service_cls: type[UserService] = UserService):
+        self.service_cls = service_cls
+
+    def create(
         self,
-        user_repo: UserRepository = Depends(user_repository),
-        jwt: JWT = Depends(get_jwt_service),
-    ):
-        return UserService(repo=user_repo, jwt=jwt)
+        user_repo: UserRepository,
+        jwt: JWT,
+    ) -> UserService:
+        return self.service_cls(repo=user_repo, jwt=jwt)
 
 
 class OAuthServiceFactory:
-    def __call__(
+    def __init__(self, service_cls: type[OAuthService] = OAuthService):
+        self.service_cls = service_cls
+
+    def create(
         self,
-        user_repo: UserRepository = Depends(user_repository),
-        jwt: JWT = Depends(get_jwt_service),
-    ):
-        return OAuthService(repo=user_repo, jwt=jwt)
+        user_repo: UserRepository,
+        jwt: JWT,
+    ) -> OAuthService:
+        return self.service_cls(repo=user_repo, jwt=jwt)
 
 
-get_user_service = UserServiceFactory()
-get_oauth_service = OAuthServiceFactory()
+user_service_factory = UserServiceFactory()
+oauth_service_factory = OAuthServiceFactory()
+
+
+def get_user_service(
+    user_repo: UserRepository = Depends(user_repository),
+    jwt: JWT = Depends(get_jwt_service),
+) -> UserService:
+    return user_service_factory.create(user_repo=user_repo, jwt=jwt)
+
+
+def get_oauth_service(
+    user_repo: UserRepository = Depends(user_repository),
+    jwt: JWT = Depends(get_jwt_service),
+) -> OAuthService:
+    return oauth_service_factory.create(user_repo=user_repo, jwt=jwt)
 
 
 async def get_current_user(
