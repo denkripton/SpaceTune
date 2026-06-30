@@ -1,24 +1,37 @@
 from fastapi import Depends
 
-from src.modules.profile.service import ProfileService
-from src.modules.profile.repository import ProfileRepository
-from src.modules.auth.repository import UserRepository
 from src.dependencies import RepoFactory
-from src.modules.auth.utils import JWT
-
+from src.modules.auth.repository import UserRepository
+from src.modules.profile.repository import ProfileRepository
+from src.modules.profile.service import ProfileService
 
 user_repository = RepoFactory(repo=UserRepository)
 profile_repository = RepoFactory(repo=ProfileRepository)
 
 
-
 class ProfileServiceFactory:
-    def __call__(
+    def __init__(self, service_cls: type[ProfileService] = ProfileService):
+        self.service_cls = service_cls
+
+    def create(
         self,
-        user_repo: UserRepository = Depends(user_repository),
-        profile_repo: ProfileRepository = Depends(profile_repository),
-    ):
-        return ProfileService(repo=user_repo, profile_repo=profile_repo)
+        user_repo: UserRepository,
+        profile_repo: ProfileRepository,
+    ) -> ProfileService:
+        return self.service_cls(
+            repo=user_repo,
+            profile_repo=profile_repo,
+        )
 
 
-get_profile_service = ProfileServiceFactory()
+profile_service_factory = ProfileServiceFactory()
+
+
+def get_profile_service(
+    user_repo: UserRepository = Depends(user_repository),
+    profile_repo: ProfileRepository = Depends(profile_repository),
+) -> ProfileService:
+    return profile_service_factory.create(
+        user_repo=user_repo,
+        profile_repo=profile_repo,
+    )
