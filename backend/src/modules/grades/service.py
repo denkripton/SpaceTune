@@ -43,6 +43,7 @@ class GradeService:
             except Exception as e:
                 await self.__grade_repo.session.rollback()
                 logger.warning(e)
+                raise ServiceError(code=500, msg="Failed to update grade") from e
             return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
 
         data = {
@@ -58,5 +59,6 @@ class GradeService:
         except Exception as e:
             await self.__grade_repo.session.rollback()
             logger.warning(e)
-
+            raise ServiceError(code=500, msg="Failed to update grade") from e
+        
         return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
