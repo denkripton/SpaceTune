@@ -116,6 +116,8 @@ class TrackService:
         except Exception as e:
             await self.__track_repo.session.rollback()
             logger.warning(e)
+            raise ServiceError(code=500, msg="Failed to delete track") from e
+        
         return "Track has been deleted succesfuly"
 
     async def get_track(self, track_id):
