@@ -59,20 +59,22 @@ class TrackService:
         if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
             raise ServiceError(code=422, msg="Invalid audio file type")
 
-        bucket_manager.upload_file(
-            file=music_file.file,
-            file_type=music_file.content_type,
-            key=track_aws_key,
-        )
-
         if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
             raise ServiceError(code=422, msg="Invalid image file type")
 
-        bucket_manager.upload_file(
-            file=image_file.file,
-            file_type=image_file.content_type,
-            key=image_aws_key,
-        )
+        try:
+            bucket_manager.upload_file(
+                file=music_file.file,
+                file_type=music_file.content_type,
+                key=track_aws_key,
+            )
+            bucket_manager.upload_file(
+                file=image_file.file,
+                file_type=image_file.content_type,
+                key=image_aws_key,
+            )
+        except Exception as e:
+            raise ServiceError(code=500, msg="Failed to upload media") from e
 
         try:
             track = await self.__track_repo.create(**data)
@@ -83,7 +85,7 @@ class TrackService:
             bucket_manager.delete_file(key=track_aws_key)
             bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
-            raise ServiceError(code=500, msg="Failed to save track") from e  
+            raise ServiceError(code=500, msg="Failed to save track") from e
 
         metadata = TrackReadSchema(
             id=track.id,
@@ -101,12 +103,10 @@ class TrackService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        existing_track = await self.__track_repo.get_one(
-            id=track_id, owner_id=user_id
-        )
+        existing_track = await self.__track_repo.get_one(id=track_id, owner_id=user_id)
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
-        
+
         bucket_manager.delete_file(key=existing_track.track_url)
         bucket_manager.delete_file(key=existing_track.photo_url)
 
