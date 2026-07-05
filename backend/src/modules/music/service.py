@@ -1,21 +1,17 @@
 import uuid
 from datetime import datetime
 
-from src.modules.music.repository import TrackRepository
-from src.modules.grades.repository import GradeRepository
+from src.aws import bucket_manager
 from src.modules.auth.repository import UserRepository
-
-from src.modules.music.schemas.track.read import TrackReadSchema
-from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
+from src.modules.grades.repository import GradeRepository
+from src.modules.music.config import logger
+from src.modules.music.repository import TrackRepository
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
-
+from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track.read import TrackReadSchema
+from src.modules.music.utils import count_avg, count_duration
 from src.modules.music.utils.enums import MediaTypes
-
-from src.aws import bucket_manager
-from src.modules.music.config import logger
-from src.modules.music.utils import count_duration, count_avg
-from src.modules.auth.utils import pw_manager
 from src.utils.exceptions import ServiceError
 
 
@@ -87,7 +83,7 @@ class TrackService:
             bucket_manager.delete_file(key=track_aws_key)
             bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
-
+            raise ServiceError(code=500, msg="Failed to save track") from e  
 
         metadata = TrackReadSchema(
             id=track.id,

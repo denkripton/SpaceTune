@@ -5,9 +5,9 @@ import respx
 from httpx import Response
 
 from src.config import settings
-from backend.src.utils.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 from src.modules.auth.services.oauth import OAuthService
-from tests.conftest import make_fake_user
+from tests.factories import make_fake_user
 
 
 @pytest.fixture

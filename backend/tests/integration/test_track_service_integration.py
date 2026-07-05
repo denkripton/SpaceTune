@@ -1,14 +1,15 @@
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from backend.src.utils.exceptions import ServiceError
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.service import TrackService
-from tests.integration.conftest import (
+from src.utils.exceptions import ServiceError
+
+from tests.factories import (
     create_real_grade,
     create_real_track,
     create_real_user,
@@ -125,6 +126,55 @@ async def test_create_track_allows_same_name_for_different_owners(
         )
 
     assert result.name == "Shared Title"
+
+
+async def test_create_track_raises_service_error_and_cleans_up_s3_when_db_write_fails(
+    db_session, track_service, mocked_bucket_manager
+):
+    owner = await create_real_user(db_session)
+    fixed_uuid = uuid.uuid4()
+    colliding_track_url = f"track/{owner.id}/{fixed_uuid}"
+    await create_real_track(
+        db_session,
+        owner_id=owner.id,
+        name="Pre-existing",
+        track_url=colliding_track_url,
+    )
+
+    creation_data = TrackCreationSchema(name="Will Collide", artists=[])
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=100_000),
+        ),
+        patch(
+            "src.modules.music.service.uuid.uuid4",
+            side_effect=[fixed_uuid, uuid.uuid4()],
+        ),
+    ):
+        with pytest.raises(ServiceError) as exc_info:
+            await track_service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=make_upload_file(),
+                image_file=make_upload_file(content_type="image/png"),
+            )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.message == "Failed to save track"
+
+    uploaded_keys = {
+        call.kwargs["key"] for call in mocked_bucket_manager.upload_file.call_args_list
+    }
+    deleted_keys = {
+        call.kwargs["key"] for call in mocked_bucket_manager.delete_file.call_args_list
+    }
+    assert uploaded_keys == deleted_keys
+    assert len(uploaded_keys) == 2
+
+    track_repo = TrackRepository(session=db_session)
+    assert await track_repo.get_one(owner_id=owner.id, name="Will Collide") is None
 
 
 async def test_delete_track_removes_track_and_existing_grades(

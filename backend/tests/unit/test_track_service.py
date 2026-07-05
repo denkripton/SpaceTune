@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.src.utils.exceptions import ServiceError
 from src.modules.music.service import TrackService
-from tests.conftest import make_fake_track, make_fake_user
+from src.utils.exceptions import ServiceError
+from tests.factories import make_fake_track, make_fake_user
 
 
 @pytest.fixture
@@ -194,7 +194,7 @@ async def test_create_track_success_places_owner_first_in_artists(
     assert result.duration == 180_000
 
 
-async def test_create_track_crashes_with_unbound_local_error_when_db_write_fails():
+async def test_create_track_raises_service_error_when_db_write_fails():
     owner = make_fake_user()
     user_repo_mock = MagicMock()
     user_repo_mock.get_by_id = AsyncMock(return_value=owner)
@@ -205,6 +205,7 @@ async def test_create_track_crashes_with_unbound_local_error_when_db_write_fails
     track_repo_mock.session = MagicMock()
     track_repo_mock.session.commit = AsyncMock()
     track_repo_mock.session.rollback = AsyncMock()
+    track_repo_mock.session.refresh = AsyncMock()
 
     service = TrackService(
         track_repo=track_repo_mock, user_repo=user_repo_mock, grade_repo=MagicMock()
@@ -218,16 +219,22 @@ async def test_create_track_crashes_with_unbound_local_error_when_db_write_fails
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch("src.modules.music.service.bucket_manager"),
+        patch("src.modules.music.service.bucket_manager") as fake_bucket,
     ):
-        with pytest.raises(UnboundLocalError):
+        with pytest.raises(ServiceError) as exc_info:
             await service.create_track(
                 user_id=str(owner.id),
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=make_upload_file(content_type="image/png"),
             )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.message == "Failed to save track"
+    assert isinstance(exc_info.value.__cause__, Exception)
+
     track_repo_mock.session.rollback.assert_awaited_once()
+    assert fake_bucket.delete_file.call_count == 2
 
 
 async def test_delete_track_raises_422_when_user_does_not_exist(

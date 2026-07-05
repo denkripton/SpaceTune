@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from backend.src.utils.exceptions import ServiceError
+from src.utils.exceptions import ServiceError
 from src.modules.grades.service import GradeService
-from tests.conftest import make_fake_grade, make_fake_track, make_fake_user
+from tests.factories import make_fake_grade, make_fake_track, make_fake_user
 
 
 @pytest.fixture

@@ -6,6 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 class Settings(BaseSettings):
     DB_URL: str
+    TEST_DB_URL: str
 
     JWT_SECRET_KEY: str
 

@@ -8,7 +8,7 @@ from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.profile.repository import ProfileRepository
-from tests.integration.conftest import (
+from tests.factories import (
     create_real_grade,
     create_real_profile,
     create_real_track,
