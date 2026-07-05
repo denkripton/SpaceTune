@@ -1,4 +1,5 @@
 import uuid
+from typing import override
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ class SQLAlchemyRepository(ABCRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    @override
     async def get_one(self, **kwargs):
         conditions = []
 
@@ -24,6 +26,7 @@ class SQLAlchemyRepository(ABCRepository):
         obj = data.scalars().first()
         return obj
     
+    @override
     async def get_many(self, skip: int = 0, limit: int = None, **kwargs):
         conditions = []
 
@@ -39,11 +42,13 @@ class SQLAlchemyRepository(ABCRepository):
     async def get_by_id(self, id: uuid.UUID):
         return await self.get_one(id=id)
 
+    @override
     async def create(self, **kwargs):
         obj = self.model(**kwargs)
         self.session.add(obj)
         return obj
 
+    @override
     async def delete_obj(self, id: uuid.UUID):
         obj = await self.get_one(id=id)
         await self.session.delete(obj)

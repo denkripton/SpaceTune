@@ -1,3 +1,5 @@
+from typing import override
+
 from fastapi import FastAPI
 
 from src.utils import register_exception_handlers
@@ -26,6 +28,7 @@ class API(Application):
         self.contact = contact
         self.routers = [user_router, music_router, profile_router, grade_router]
 
+    @override
     def create(self):
         self.app = FastAPI(
             title=self.title,
