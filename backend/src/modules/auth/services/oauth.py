@@ -1,36 +1,43 @@
+import secrets
+from urllib.parse import urlencode
+
 import httpx
 
 from src.config import settings
-from src.utils.exceptions import ServiceError
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.utils import JWT
+from src.utils.exceptions import ServiceError
 
 
 class OAuthService:
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+    STATE_BYTES = 32
 
     def __init__(self, repo: UserRepository, jwt: JWT):
         self.__repo = repo
         self.__jwt = jwt
 
-    def get_redirect_url(self):
-        result = []
+    def generate_state(self) -> str:
+        return secrets.token_urlsafe(self.STATE_BYTES)
 
+    def verify_state(self, received: str | None, expected: str | None) -> None:
+        if (
+            not received
+            or not expected
+            or not secrets.compare_digest(received, expected)
+        ):
+            raise ServiceError(code=422, msg="Invalid or missing OAuth state")
+
+    def get_redirect_url(self, state: str) -> str:
         params = {
             "client_id": settings.GOOGLE_CLIENT_ID,
             "redirect_uri": settings.GOOGLE_REDIRECT_URI,
             "response_type": "code",
             "scope": "openid email profile",
             "access_type": "offline",
+            "state": state,
         }
-        for k, v in params.items():
-            result.append(f"{k}={v}")
-
-        query = "&".join(result)
-
-        a = f"https://accounts.google.com/o/oauth2/v2/auth?{query}"
-        print(a)
-        return a
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
 
     async def _exchange_code(self, code: str):
         async with httpx.AsyncClient() as client:

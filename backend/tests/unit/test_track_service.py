@@ -2,9 +2,9 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.modules.music.service import TrackService
 from src.utils.exceptions import ServiceError
+
 from tests.factories import make_fake_track, make_fake_user
 
 
@@ -141,7 +141,7 @@ async def test_create_track_raises_422_on_invalid_image_content_type(
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Invalid image file type"
 
-    assert fake_bucket.upload_file.call_count == 1
+    assert fake_bucket.upload_file.call_count == 0
 
 
 async def test_create_track_success_places_owner_first_in_artists(
@@ -259,9 +259,7 @@ async def test_delete_track_raises_422_when_track_does_not_exist(
     track_repo.get_one = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
-        await track_service.delete_track(
-            user_id=str(owner.id), track_id=uuid.uuid4()
-        )
+        await track_service.delete_track(user_id=str(owner.id), track_id=uuid.uuid4())
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Track does not exist"

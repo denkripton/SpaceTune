@@ -1,12 +1,13 @@
 from unittest.mock import AsyncMock
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 import respx
 from httpx import Response
-
 from src.config import settings
-from src.utils.exceptions import ServiceError
 from src.modules.auth.services.oauth import OAuthService
+from src.utils.exceptions import ServiceError
+
 from tests.factories import make_fake_user
 
 
@@ -170,11 +171,16 @@ async def test_login_truncates_username_to_twenty_characters(oauth_service, user
 
 
 def test_get_redirect_url_includes_required_google_oauth_params(oauth_service):
-    url = oauth_service.get_redirect_url()
+    url = oauth_service.get_redirect_url(state="test-state")
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query)
 
-    assert url.startswith("https://accounts.google.com/o/oauth2/v2/auth?")
-    assert f"client_id={settings.GOOGLE_CLIENT_ID}" in url
-    assert f"redirect_uri={settings.GOOGLE_REDIRECT_URI}" in url
-    assert "response_type=code" in url
-    assert "scope=openid email profile" in url
-    assert "access_type=offline" in url
+    assert parsed.scheme == "https"
+    assert parsed.netloc == "accounts.google.com"
+    assert parsed.path == "/o/oauth2/v2/auth"
+    assert params["client_id"] == [settings.GOOGLE_CLIENT_ID]
+    assert params["redirect_uri"] == [settings.GOOGLE_REDIRECT_URI]
+    assert params["response_type"] == ["code"]
+    assert params["scope"] == ["openid email profile"]
+    assert params["access_type"] == ["offline"]
+    assert params["state"] == ["test-state"]

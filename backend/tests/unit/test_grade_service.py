@@ -2,9 +2,9 @@ import uuid
 from unittest.mock import AsyncMock
 
 import pytest
-
-from src.utils.exceptions import ServiceError
 from src.modules.grades.service import GradeService
+from src.utils.exceptions import ServiceError
+
 from tests.factories import make_fake_grade, make_fake_track, make_fake_user
 
 
@@ -112,6 +112,11 @@ async def test_grade_track_rolls_back_on_create_failure(
         side_effect=Exception("check constraint violated")
     )
 
-    await grade_service.grade_track(user_id=user.id, track_id=track.id, user_grade=99)
+    with pytest.raises(ServiceError) as exc_info:
+        await grade_service.grade_track(
+            user_id=user.id, track_id=track.id, user_grade=99
+        )
 
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.message == "Failed to update grade"
     grade_repo.session.rollback.assert_awaited_once()

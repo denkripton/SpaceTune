@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Request
 from fastapi.responses import RedirectResponse
 
 from src.modules.auth import get_current_user, get_oauth_service, get_user_service
@@ -63,15 +63,26 @@ async def login_user(
     return user
 
 
-@user_router.post(
+@user_router.get(
     "/oauth/google",
     summary="Google OAuth redirect",
     tags=["Authentication"],
     description="Redirect to Google login page",
 )
-async def google_login(service: OAuthService = Depends(get_oauth_service)):
-    url = service.get_redirect_url()
-    return RedirectResponse(url=url)
+async def google_login(
+    response: Response, service: OAuthService = Depends(get_oauth_service)
+):
+    state = service.generate_state()
+    response.set_cookie(
+        key="oauth_state",
+        value=state,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=600,
+    )
+    url = service.get_redirect_url(state=state)
+    return RedirectResponse(url=url, headers=response.headers)
 
 
 @user_router.get(
@@ -85,8 +96,14 @@ async def google_login(service: OAuthService = Depends(get_oauth_service)):
     },
 )
 async def google_callback(
-    code: str, response: Response, service: OAuthService = Depends(get_oauth_service)
+    code: str,
+    state: str,
+    request: Request,
+    response: Response,
+    service: OAuthService = Depends(get_oauth_service),
 ):
+    service.verify_state(received=state, expected=request.cookies.get("oauth_state"))
+    response.delete_cookie("oauth_state")
     user = await service.login(code=code)
 
     response.set_cookie(
