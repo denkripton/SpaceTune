@@ -3,9 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
-
 from src.modules.music.service import TrackService
 from src.utils.exceptions import ServiceError
+
+from src.modules.music.utils.enums import FileSizeLimit
 
 from tests.factories import make_fake_track, make_fake_user
 
@@ -17,11 +18,12 @@ def track_service(track_repo, user_repo, grade_repo):
     )
 
 
-def make_upload_file(content_type="audio/mpeg", filename="track.mp3"):
+def make_upload_file(content_type="audio/mpeg", filename="track.mp3", size=1024):
     upload = MagicMock()
     upload.content_type = content_type
     upload.filename = filename
     upload.file = MagicMock()
+    upload.size = size
     return upload
 
 
@@ -144,6 +146,135 @@ async def test_create_track_raises_422_on_invalid_image_content_type(
     assert exc_info.value.message == "Invalid image file type"
 
     assert fake_bucket.upload_file.call_count == 0
+
+
+async def test_create_track_raises_422_when_audio_exceeds_size_limit(
+    track_service, user_repo, track_repo
+):
+
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+    track_repo.get_one = AsyncMock(return_value=None)
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Too Big", "artists": []}
+
+    oversized_music_file = make_upload_file(size=FileSizeLimit.MAX_AUDIO_SIZE.value + 1)
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=180_000),
+        ),
+        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+    ):
+        with pytest.raises(ServiceError) as exc_info:
+            await track_service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=oversized_music_file,
+                image_file=make_upload_file(content_type="image/png"),
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.message == "Audio file is too big"
+    fake_bucket.upload_file.assert_not_called()
+
+
+async def test_create_track_raises_422_when_image_exceeds_size_limit(
+    track_service, user_repo, track_repo
+):
+
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+    track_repo.get_one = AsyncMock(return_value=None)
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Too Big Image", "artists": []}
+
+    oversized_image_file = make_upload_file(
+        content_type="image/png", size=FileSizeLimit.MAX_AUDIO_SIZE.value + 1
+    )
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=180_000),
+        ),
+        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+    ):
+        with pytest.raises(ServiceError) as exc_info:
+            await track_service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=make_upload_file(),
+                image_file=oversized_image_file,
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.message == "Image file is too big"
+    fake_bucket.upload_file.assert_not_called()
+
+
+async def test_create_track_allows_upload_when_size_is_none(
+    track_service, user_repo, track_repo
+):
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+    track_repo.get_one = AsyncMock(return_value=None)
+
+    created_track = make_fake_track(owner_id=owner.id, name="Unknown Size")
+    track_repo.create = AsyncMock(return_value=created_track)
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Unknown Size", "artists": []}
+
+    music_file = make_upload_file(size=None)
+    image_file = make_upload_file(content_type="image/png", size=None)
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=1000),
+        ),
+        patch("src.modules.music.service.bucket_manager"),
+    ):
+        result = await track_service.create_track(
+            user_id=str(owner.id),
+            data=creation_data,
+            music_file=music_file,
+            image_file=image_file,
+        )
+
+    assert result.id == created_track.id
+
+
+async def test_create_track_validates_type_and_size_before_count_duration(
+    track_service, user_repo, track_repo
+):
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+    track_repo.get_one = AsyncMock(return_value=None)
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Order Check", "artists": []}
+
+    bad_file = make_upload_file(content_type="application/x-msdownload")
+
+    with patch(
+        "src.modules.music.service.count_duration",
+        new=AsyncMock(return_value=180_000),
+    ) as fake_count_duration:
+        with pytest.raises(ServiceError) as exc_info:
+            await track_service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=bad_file,
+                image_file=make_upload_file(content_type="image/png"),
+            )
+
+    assert exc_info.value.message == "Invalid audio file type"
+    fake_count_duration.assert_not_awaited()
 
 
 async def test_create_track_success_places_owner_first_in_artists(

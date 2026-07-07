@@ -13,7 +13,7 @@ from src.modules.music.schemas.track.media import MediaURLsSchema
 from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.utils import count_avg, count_duration
-from src.modules.music.utils.enums import MediaTypes
+from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
 from src.utils.exceptions import ServiceError
 
 
@@ -38,12 +38,6 @@ class TrackService:
         track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
         image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
 
-        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid audio file type")
-
-        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid image file type")
-
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
@@ -53,6 +47,24 @@ class TrackService:
 
         if existing_track is not None:
             raise ServiceError(code=422, msg="Track already exist")
+
+        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid audio file type")
+
+        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid image file type")
+
+        if (
+            music_file.size is not None
+            and music_file.size > FileSizeLimit.MAX_AUDIO_SIZE.value
+        ):
+            raise ServiceError(code=422, msg="Audio file is too big")
+
+        if (
+            image_file.size is not None
+            and image_file.size > FileSizeLimit.MAX_IMAGE_SIZE.value
+        ):
+            raise ServiceError(code=422, msg="Image file is too big")
 
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
@@ -126,7 +138,7 @@ class TrackService:
             await self.__track_repo.session.rollback()
             logger.warning(e)
             raise ServiceError(code=500, msg="Failed to delete track") from e
-        
+
         return "Track has been deleted succesfuly"
 
     async def get_track(self, track_id):
