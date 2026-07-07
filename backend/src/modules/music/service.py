@@ -32,10 +32,17 @@ class TrackService:
         self, user_id: str, data: TrackCreationSchema, music_file, image_file
     ):
         user_id = uuid.UUID(user_id)
-        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
-        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
         data = data.model_dump()
         existing_user = await self.__user_repo.get_by_id(id=user_id)
+
+        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
+        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
+
+        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid audio file type")
+
+        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
+            raise ServiceError(code=422, msg="Invalid image file type")
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -57,12 +64,6 @@ class TrackService:
 
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
-
-        if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid audio file type")
-
-        if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid image file type")
 
         try:
             bucket_manager.upload_file(
