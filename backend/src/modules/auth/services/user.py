@@ -41,6 +41,9 @@ class UserService:
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
+        
+        if existing_user.password is None:
+            raise ServiceError(code=422, msg="Password does not exist, set it")
 
         password_check = pw_manager.check_password(
             data.password, existing_user.password
