@@ -53,8 +53,9 @@ class UserService:
         if password_check is False:
             raise ServiceError(code=403, msg="Incorrect password")
 
-        access = self.__jwt.create_access_token(existing_user.id)
-        refresh = self.__jwt.create_refresh_token(existing_user.id)
+        user_id = str(existing_user.id)
+        access = self.__jwt.create_access_token(user_id)
+        refresh = self.__jwt.create_refresh_token(user_id)
 
         return {
             "access": access,
