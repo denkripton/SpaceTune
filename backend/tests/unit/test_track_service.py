@@ -2,6 +2,8 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from sqlalchemy.exc import IntegrityError
+
 from src.modules.music.service import TrackService
 from src.utils.exceptions import ServiceError
 
@@ -232,6 +234,53 @@ async def test_create_track_raises_service_error_when_db_write_fails():
     assert exc_info.value.status_code == 500
     assert exc_info.value.message == "Failed to save track"
     assert isinstance(exc_info.value.__cause__, Exception)
+
+    track_repo_mock.session.rollback.assert_awaited_once()
+    assert fake_bucket.delete_file.call_count == 2
+
+
+async def test_create_track_raises_422_when_db_unique_constraint_violated():
+    owner = make_fake_user()
+    user_repo_mock = MagicMock()
+    user_repo_mock.get_by_id = AsyncMock(return_value=owner)
+
+    track_repo_mock = MagicMock()
+    track_repo_mock.get_one = AsyncMock(return_value=None)
+    track_repo_mock.create = AsyncMock(
+        side_effect=IntegrityError(
+            "duplicate key value", {}, Exception("duplicate key value")
+        )
+    )
+    track_repo_mock.session = MagicMock()
+    track_repo_mock.session.commit = AsyncMock()
+    track_repo_mock.session.rollback = AsyncMock()
+    track_repo_mock.session.refresh = AsyncMock()
+
+    service = TrackService(
+        track_repo=track_repo_mock, user_repo=user_repo_mock, grade_repo=MagicMock()
+    )
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Crashy", "artists": []}
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=1000),
+        ),
+        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+    ):
+        with pytest.raises(ServiceError) as exc_info:
+            await service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=make_upload_file(),
+                image_file=make_upload_file(content_type="image/png"),
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.message == "Track already exist"
+    assert isinstance(exc_info.value.__cause__, IntegrityError)
 
     track_repo_mock.session.rollback.assert_awaited_once()
     assert fake_bucket.delete_file.call_count == 2

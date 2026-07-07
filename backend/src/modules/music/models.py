@@ -10,6 +10,7 @@ from sqlalchemy import (
     func,
     ForeignKey,
     BigInteger,
+    UniqueConstraint,
 )
 
 from src.databases import Base
@@ -36,6 +37,10 @@ class Track(Base):
         server_default=func.now(),
         server_onupdate=func.now(),
         nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("owner_id", "name", name="uq_tracks_owner_name"),
     )
 
     track_grades_conn: Mapped[List["Grade"]] = relationship(

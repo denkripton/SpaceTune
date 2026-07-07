@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy.exc import IntegrityError
+
 from src.aws import bucket_manager
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
@@ -80,6 +82,12 @@ class TrackService:
             track = await self.__track_repo.create(**data)
             await self.__track_repo.session.commit()
             await self.__track_repo.session.refresh(track)
+        except IntegrityError as e:
+            await self.__track_repo.session.rollback()
+            bucket_manager.delete_file(key=track_aws_key)
+            bucket_manager.delete_file(key=image_aws_key)
+            logger.warning(e)
+            raise ServiceError(code=422, msg="Track already exist") from e
         except Exception as e:
             await self.__track_repo.session.rollback()
             bucket_manager.delete_file(key=track_aws_key)
