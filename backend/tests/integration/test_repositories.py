@@ -3,11 +3,11 @@ from datetime import date
 
 import pytest
 from sqlalchemy.exc import IntegrityError
-
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.profile.repository import ProfileRepository
+
 from tests.factories import (
     create_real_grade,
     create_real_profile,
@@ -198,3 +198,73 @@ async def test_get_user_by_id_finds_profile_for_correct_user(db_session):
 
     assert found is not None
     assert found.bio == "Real bio"
+
+
+async def test_get_aggregates_returns_correct_average_and_count(db_session):
+    repo = GradeRepository(session=db_session)
+    owner = await create_real_user(db_session)
+    track = await create_real_track(db_session, owner_id=owner.id)
+
+    rater_a = await create_real_user(
+        db_session, username="rater_a", email="a@example.com"
+    )
+    rater_b = await create_real_user(
+        db_session, username="rater_b", email="b@example.com"
+    )
+    rater_c = await create_real_user(
+        db_session, username="rater_c", email="c@example.com"
+    )
+    await create_real_grade(db_session, user_id=rater_a.id, track_id=track.id, grade=8)
+    await create_real_grade(db_session, user_id=rater_b.id, track_id=track.id, grade=9)
+    await create_real_grade(db_session, user_id=rater_c.id, track_id=track.id, grade=10)
+
+    aggregates = await repo.get_aggregates_by_track_ids([track.id])
+
+    avg, count = aggregates[track.id]
+    assert avg == 9.0
+    assert count == 3
+
+
+async def test_get_aggregates_groups_correctly_across_multiple_tracks(db_session):
+    repo = GradeRepository(session=db_session)
+    owner = await create_real_user(db_session)
+    track_one = await create_real_track(db_session, owner_id=owner.id, name="Track One")
+    track_two = await create_real_track(db_session, owner_id=owner.id, name="Track Two")
+
+    rater = await create_real_user(db_session, username="rater", email="r@example.com")
+    other_rater = await create_real_user(
+        db_session, username="rater2", email="r2@example.com"
+    )
+
+    await create_real_grade(
+        db_session, user_id=rater.id, track_id=track_one.id, grade=2
+    )
+    await create_real_grade(
+        db_session, user_id=other_rater.id, track_id=track_one.id, grade=4
+    )
+    await create_real_grade(
+        db_session, user_id=rater.id, track_id=track_two.id, grade=10
+    )
+
+    aggregates = await repo.get_aggregates_by_track_ids([track_one.id, track_two.id])
+
+    assert aggregates[track_one.id] == (3.0, 2)
+    assert aggregates[track_two.id] == (10.0, 1)
+
+
+async def test_get_aggregates_omits_tracks_with_no_grades(db_session):
+    repo = GradeRepository(session=db_session)
+    owner = await create_real_user(db_session)
+    ungraded_track = await create_real_track(db_session, owner_id=owner.id)
+
+    aggregates = await repo.get_aggregates_by_track_ids([ungraded_track.id])
+
+    assert ungraded_track.id not in aggregates
+
+
+async def test_get_aggregates_returns_empty_dict_for_empty_input(db_session):
+    repo = GradeRepository(session=db_session)
+
+    aggregates = await repo.get_aggregates_by_track_ids([])
+
+    assert aggregates == {}

@@ -12,7 +12,7 @@ from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.media import MediaURLsSchema
 from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
-from src.modules.music.utils import count_avg, count_duration
+from src.modules.music.utils import count_duration
 from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
 from src.utils.exceptions import ServiceError
 
@@ -147,22 +147,18 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
-        grades = await self.__grade_repo.get_many(track_id=existing_track.id)
-        grades_arr = []
+        aggregates = await self.__grade_repo.get_aggregates_by_track_ids(
+            [existing_track.id]
+        )
+        avg_grade, ratings_count = aggregates.get(existing_track.id, (0, 0))
 
-        for g in grades:
-            grades_arr.append(g.grade)
-
-        avg_grade = count_avg(arr=grades_arr)
-
-        # It looks terrible, but now I can't find any other solution
         metadata = TrackReadSchema(
             id=existing_track.id,
             name=existing_track.name,
             artists=existing_track.artists,
             duration=existing_track.duration,
             average_grade=avg_grade,
-            number_of_ratings=len(grades_arr),
+            number_of_ratings=ratings_count,
             released=datetime.strftime(existing_track.created_at, "%Y-%m-%d"),
         )
 
@@ -176,20 +172,17 @@ class TrackService:
     async def get_my_tracks(self, user_id):
 
         tracks = await self.__track_repo.get_many(owner_id=user_id)
+        track_ids = [track.id for track in tracks]
+
+        aggregates = await self.__grade_repo.get_aggregates_by_track_ids(track_ids)
+
         list_to_return = []
 
-        # It looks terrible, but now I can't find any other solution
         for track in tracks:
             audio = bucket_manager.presigned_url(key=track.track_url)
             image = bucket_manager.presigned_url(key=track.photo_url)
 
-            grades = await self.__grade_repo.get_many(track_id=track.id)
-            grades_arr = []
-
-            for g in grades:
-                grades_arr.append(g.grade)
-
-            avg_grade = count_avg(arr=grades_arr)
+            avg_grade, ratings_count = aggregates.get(track.id, (0, 0))
 
             list_to_return.append(
                 TrackMetadataReadShema(
@@ -199,7 +192,7 @@ class TrackService:
                         artists=track.artists,
                         duration=track.duration,
                         average_grade=avg_grade,
-                        number_of_ratings=len(grades_arr),
+                        number_of_ratings=ratings_count,
                         released=datetime.strftime(track.created_at, "%Y-%m-%d"),
                     ),
                     media=MediaURLsSchema(audio=audio, image=image),

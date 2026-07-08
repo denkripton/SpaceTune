@@ -487,7 +487,7 @@ async def test_get_track_returns_zero_average_when_no_grades_exist(
 
     existing_track = make_fake_track(name="No Grades Yet")
     track_repo.get_by_id = AsyncMock(return_value=existing_track)
-    grade_repo.get_many = AsyncMock(return_value=[])
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(return_value={})
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
         fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
@@ -504,12 +504,8 @@ async def test_get_track_computes_average_grade_correctly(
     existing_track = make_fake_track(name="Popular Track")
     track_repo.get_by_id = AsyncMock(return_value=existing_track)
 
-    grade_repo.get_many = AsyncMock(
-        return_value=[
-            MagicMock(grade=8),
-            MagicMock(grade=9),
-            MagicMock(grade=10),
-        ]
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(
+        return_value={existing_track.id: (9.0, 3)}
     )
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
@@ -520,15 +516,33 @@ async def test_get_track_computes_average_grade_correctly(
     assert result["metadata"].number_of_ratings == 3
 
 
+async def test_get_track_calls_grade_aggregation_exactly_once(
+    track_service, track_repo, grade_repo
+):
+    existing_track = make_fake_track(name="Query Count Check")
+    track_repo.get_by_id = AsyncMock(return_value=existing_track)
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(
+        return_value={existing_track.id: (7.0, 2)}
+    )
+
+    with patch("src.modules.music.service.bucket_manager") as fake_bucket:
+        fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
+        await track_service.get_track(track_id=existing_track.id)
+
+    grade_repo.get_aggregates_by_track_ids.assert_awaited_once_with([existing_track.id])
+
+
 async def test_get_my_tracks_returns_empty_list_when_user_has_no_tracks(
-    track_service, track_repo
+    track_service, track_repo, grade_repo
 ):
 
     track_repo.get_many = AsyncMock(return_value=[])
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(return_value={})
 
     result = await track_service.get_my_tracks(user_id=uuid.uuid4())
 
     assert result == []
+    grade_repo.get_aggregates_by_track_ids.assert_awaited_once_with([])
 
 
 async def test_get_my_tracks_assembles_metadata_and_media_for_each_track(
@@ -540,13 +554,9 @@ async def test_get_my_tracks_assembles_metadata_and_media_for_each_track(
     track_two = make_fake_track(owner_id=owner_id, name="Track Two")
 
     track_repo.get_many = AsyncMock(return_value=[track_one, track_two])
-
-    async def fake_get_many(track_id, **kwargs):
-        if track_id == track_one.id:
-            return [MagicMock(grade=5)]
-        return []
-
-    grade_repo.get_many = AsyncMock(side_effect=fake_get_many)
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(
+        return_value={track_one.id: (5.0, 1)}
+    )
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
         fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
@@ -560,3 +570,21 @@ async def test_get_my_tracks_assembles_metadata_and_media_for_each_track(
     assert result[1].metadata.name == "Track Two"
     assert result[1].metadata.average_grade == 0
     assert result[1].metadata.number_of_ratings == 0
+
+
+async def test_get_my_tracks_calls_grade_aggregation_exactly_once(
+    track_service, track_repo, grade_repo
+):
+    owner_id = uuid.uuid4()
+    tracks = [make_fake_track(owner_id=owner_id, name=f"Track {i}") for i in range(5)]
+
+    track_repo.get_many = AsyncMock(return_value=tracks)
+    grade_repo.get_aggregates_by_track_ids = AsyncMock(return_value={})
+
+    with patch("src.modules.music.service.bucket_manager") as fake_bucket:
+        fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
+        await track_service.get_my_tracks(user_id=owner_id)
+
+    assert grade_repo.get_aggregates_by_track_ids.await_count == 1
+    called_with = grade_repo.get_aggregates_by_track_ids.await_args.args[0]
+    assert set(called_with) == {t.id for t in tracks}
