@@ -7,6 +7,15 @@ from src.modules.auth.utils.jwt import JWT
 from src.config import settings
 
 
+def test_jwt_module_imports_without_error():
+    import importlib
+
+    import src.modules.auth.utils.jwt as jwt_module
+
+    importlib.reload(jwt_module)
+    assert hasattr(jwt_module, "JWT")
+
+
 @pytest.fixture
 def jwt_service():
     return JWT()
@@ -75,3 +84,30 @@ def test_validate_token_returns_payload_for_valid_token(jwt_service):
 
     assert payload is not None
     assert payload["sub"] == "user-456"
+
+
+def test_validate_token_returns_none_when_sub_claim_missing(jwt_service):
+    now = datetime.now(UTC)
+    payload = {
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=15)).timestamp()),
+    }
+    token_without_sub = pyjwt.encode(
+        payload, key=settings.JWT_SECRET_KEY, algorithm=JWT.algorithm
+    )
+
+    assert jwt_service.validate_token(token_without_sub) is None
+
+
+def test_validate_token_returns_none_when_sub_claim_is_empty_string(jwt_service):
+    now = datetime.now(UTC)
+    payload = {
+        "sub": "",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=15)).timestamp()),
+    }
+    token_with_empty_sub = pyjwt.encode(
+        payload, key=settings.JWT_SECRET_KEY, algorithm=JWT.algorithm
+    )
+
+    assert jwt_service.validate_token(token_with_empty_sub) is None

@@ -1,8 +1,8 @@
+from datetime import UTC, datetime, timedelta
 from typing import Optional
-from datetime import datetime, timedelta, UTC
 
-from jwt import encode, decode
-from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidSubjectError
+from jwt import decode, encode
+from jwt.exceptions import PyJWTError
 
 from src.config import settings
 
@@ -11,11 +11,15 @@ class JWT:
     algorithm = "HS256"
 
     def create_token(self, payload: dict) -> str:
-        token = encode(payload=payload, key=settings.JWT_SECRET_KEY, algorithm=self.algorithm)
+        token = encode(
+            payload=payload, key=settings.JWT_SECRET_KEY, algorithm=self.algorithm
+        )
         return token
 
     def decode_token(self, token: str) -> dict:
-        decoded_token = decode(jwt=token, key=settings.JWT_SECRET_KEY, algorithms=[self.algorithm])
+        decoded_token = decode(
+            jwt=token, key=settings.JWT_SECRET_KEY, algorithms=[self.algorithm]
+        )
         return decoded_token
 
     def create_access_token(self, id: str) -> str:
@@ -43,8 +47,8 @@ class JWT:
             return None
         try:
             payload = self.decode_token(token)
-        except (ExpiredSignatureError, DecodeError, InvalidSubjectError):
+        except PyJWTError:
+            return None
+        if not payload.get("sub"):
             return None
         return payload
-
-
