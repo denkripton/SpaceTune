@@ -14,7 +14,8 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.utils import count_duration
 from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
-from src.utils.exceptions import ServiceError
+from src.utils.uploads import SizeLimitedStream
+from src.utils.exceptions import ServiceError, FileSizeLimitExceeded
 
 
 class TrackService:
@@ -83,12 +84,19 @@ class TrackService:
                 file_type=music_file.content_type,
                 key=track_aws_key,
             )
+            limited_image_stream = SizeLimitedStream(
+                image_file.file, max_bytes=FileSizeLimit.MAX_IMAGE_SIZE.value
+            )
             bucket_manager.upload_file(
-                file=image_file.file,
+                file=limited_image_stream,
                 file_type=image_file.content_type,
                 key=image_aws_key,
             )
+        except FileSizeLimitExceeded as e:
+            bucket_manager.delete_file(key=track_aws_key)
+            raise ServiceError(code=422, msg="Image file is too big") from e
         except Exception as e:
+            bucket_manager.delete_file(key=track_aws_key)
             raise ServiceError(code=500, msg="Failed to upload media") from e
 
         try:

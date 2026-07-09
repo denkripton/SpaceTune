@@ -1,12 +1,12 @@
+import io
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 from src.modules.music.service import TrackService
-from src.utils.exceptions import ServiceError
-
 from src.modules.music.utils.enums import FileSizeLimit
+from src.utils.exceptions import ServiceError
 
 from tests.factories import make_fake_track, make_fake_user
 
@@ -247,6 +247,47 @@ async def test_create_track_allows_upload_when_size_is_none(
         )
 
     assert result.id == created_track.id
+
+
+async def test_create_track_raises_422_when_image_size_none_but_stream_exceeds_limit(
+    track_service, user_repo, track_repo
+):
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+    track_repo.get_one = AsyncMock(return_value=None)
+
+    creation_data = MagicMock()
+    creation_data.model_dump.return_value = {"name": "Sneaky Image", "artists": []}
+
+    music_file = make_upload_file(size=1024)
+    music_file.file = io.BytesIO(b"audio-bytes")
+    image_file = make_upload_file(content_type="image/png", size=None)
+    image_file.file = io.BytesIO(b"x" * (FileSizeLimit.MAX_IMAGE_SIZE.value + 1))
+
+    def fake_upload_file(file, file_type, key):
+        while file.read(1024 * 1024):
+            pass
+
+    with (
+        patch(
+            "src.modules.music.service.count_duration",
+            new=AsyncMock(return_value=1000),
+        ),
+        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+    ):
+        fake_bucket.upload_file.side_effect = fake_upload_file
+
+        with pytest.raises(ServiceError) as exc_info:
+            await track_service.create_track(
+                user_id=str(owner.id),
+                data=creation_data,
+                music_file=music_file,
+                image_file=image_file,
+            )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.message == "Image file is too big"
+    fake_bucket.delete_file.assert_called_once()
 
 
 async def test_create_track_validates_type_and_size_before_count_duration(
