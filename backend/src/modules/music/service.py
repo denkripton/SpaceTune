@@ -14,8 +14,8 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.utils import count_duration
 from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
+from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
 from src.utils.uploads import SizeLimitedStream
-from src.utils.exceptions import ServiceError, FileSizeLimitExceeded
 
 
 class TrackService:
@@ -36,11 +36,11 @@ class TrackService:
         data = data.model_dump()
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
-        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
-        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
-
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
+
+        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
+        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
 
         existing_track = await self.__track_repo.get_one(
             owner_id=user_id, name=data["name"]
