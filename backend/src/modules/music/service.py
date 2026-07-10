@@ -79,7 +79,7 @@ class TrackService:
         data["duration"] = await count_duration(file=music_file)
 
         try:
-            bucket_manager.upload_file(
+            await bucket_manager.upload_file(
                 file=music_file.file,
                 file_type=music_file.content_type,
                 key=track_aws_key,
@@ -87,16 +87,16 @@ class TrackService:
             limited_image_stream = SizeLimitedStream(
                 image_file.file, max_bytes=FileSizeLimit.MAX_IMAGE_SIZE.value
             )
-            bucket_manager.upload_file(
+            await bucket_manager.upload_file(
                 file=limited_image_stream,
                 file_type=image_file.content_type,
                 key=image_aws_key,
             )
         except FileSizeLimitExceeded as e:
-            bucket_manager.delete_file(key=track_aws_key)
+            await bucket_manager.delete_file(key=track_aws_key)
             raise ServiceError(code=422, msg="Image file is too big") from e
         except Exception as e:
-            bucket_manager.delete_file(key=track_aws_key)
+            await bucket_manager.delete_file(key=track_aws_key)
             raise ServiceError(code=500, msg="Failed to upload media") from e
 
         try:
@@ -105,14 +105,14 @@ class TrackService:
             await self.__track_repo.session.refresh(track)
         except IntegrityError as e:
             await self.__track_repo.session.rollback()
-            bucket_manager.delete_file(key=track_aws_key)
-            bucket_manager.delete_file(key=image_aws_key)
+            await bucket_manager.delete_file(key=track_aws_key)
+            await bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
             raise ServiceError(code=422, msg="Track already exist") from e
         except Exception as e:
             await self.__track_repo.session.rollback()
-            bucket_manager.delete_file(key=track_aws_key)
-            bucket_manager.delete_file(key=image_aws_key)
+            await bucket_manager.delete_file(key=track_aws_key)
+            await bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
             raise ServiceError(code=500, msg="Failed to save track") from e
 
@@ -136,9 +136,6 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
-        bucket_manager.delete_file(key=existing_track.track_url)
-        bucket_manager.delete_file(key=existing_track.photo_url)
-
         try:
             await self.__track_repo.delete_obj(id=existing_track.id)
             await self.__track_repo.session.commit()
@@ -146,6 +143,9 @@ class TrackService:
             await self.__track_repo.session.rollback()
             logger.warning(e)
             raise ServiceError(code=500, msg="Failed to delete track") from e
+
+        await bucket_manager.delete_file(key=existing_track.track_url)
+        await bucket_manager.delete_file(key=existing_track.photo_url)
 
         return "Track has been deleted succesfuly"
 
