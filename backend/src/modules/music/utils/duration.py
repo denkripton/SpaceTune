@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 
@@ -31,7 +32,13 @@ async def count_duration(file):
 
             tmp.close()
 
-            probe = ffmpeg.probe(tmp_path)
+            try:
+                probe = await asyncio.to_thread(ffmpeg.probe, tmp_path)
+            except ffmpeg.Error as e:
+                raise ServiceError(
+                    code=422, msg="Invalid or corrupted audio file"
+                ) from e
+
             return float(probe["format"]["duration"]) * 1000
 
         finally:
