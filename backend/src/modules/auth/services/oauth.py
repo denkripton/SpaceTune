@@ -71,13 +71,21 @@ class OAuthService:
 
         sub = user_info["sub"]
         email = user_info["email"]
+        email_verified = user_info.get("email_verified")
+
         username = user_info.get("name", email.split("@")[0])[:20]
 
         user = await self.__repo.get_one(google_id=sub)
 
         if user is None:
+            if email_verified is not True:
+                raise ServiceError(
+                    code=422,
+                    msg="Email is not verified, cannot sign in with this Google account",
+                )
+
             user = await self.__repo.get_by_email(email=email)
-            if user:
+            if user is not None:
                 user.google_id = sub
             else:
                 user = await self.__repo.create(

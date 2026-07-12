@@ -28,12 +28,14 @@ def mock_google_userinfo_endpoint(
     sub="google-sub-123",
     email="oauthuser@gmail.com",
     name="OAuth User",
+    email_verified=True,
     status_code=200,
 ):
+    payload = {"sub": sub, "email": email, "name": name}
+    if email_verified is not None:
+        payload["email_verified"] = email_verified
     return respx.get(settings.GOOGLE_USERINFO_URL).mock(
-        return_value=Response(
-            status_code, json={"sub": sub, "email": email, "name": name}
-        )
+        return_value=Response(status_code, json=payload)
     )
 
 
@@ -82,11 +84,13 @@ async def test_login_does_not_create_duplicate_when_google_id_already_linked(
 
 
 @respx.mock
-async def test_login_links_google_id_to_existing_account_with_same_email(
+async def test_login_links_google_id_to_existing_account_when_email_verified(
     oauth_service, user_repo
 ):
     mock_google_token_endpoint()
-    mock_google_userinfo_endpoint(sub="new-google-sub", email="existing@example.com")
+    mock_google_userinfo_endpoint(
+        sub="new-google-sub", email="existing@example.com", email_verified=True
+    )
 
     existing_user = make_fake_user(
         username="existinguser", email="existing@example.com", google_id=None
@@ -99,6 +103,93 @@ async def test_login_links_google_id_to_existing_account_with_same_email(
     user_repo.create.assert_not_called()
     assert existing_user.google_id == "new-google-sub"
     user_repo.session.commit.assert_awaited_once()
+
+
+@respx.mock
+async def test_login_rejects_linking_when_email_not_verified(oauth_service, user_repo):
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="attacker-sub", email="victim@example.com", email_verified=False
+    )
+
+    victim = make_fake_user(
+        username="victim", email="victim@example.com", google_id=None
+    )
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=victim)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    assert victim.google_id is None
+    user_repo.create.assert_not_called()
+    user_repo.session.commit.assert_not_called()
+
+
+@respx.mock
+async def test_login_rejects_linking_when_email_verified_claim_is_missing(
+    oauth_service, user_repo
+):
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="attacker-sub", email="victim@example.com", email_verified=None
+    )
+
+    victim = make_fake_user(
+        username="victim", email="victim@example.com", google_id=None
+    )
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=victim)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    assert victim.google_id is None
+    user_repo.session.commit.assert_not_called()
+
+
+@respx.mock
+async def test_login_rejects_linking_when_email_verified_is_truthy_non_bool_string(
+    oauth_service, user_repo
+):
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="attacker-sub", email="victim@example.com", email_verified="true"
+    )
+
+    victim = make_fake_user(
+        username="victim", email="victim@example.com", google_id=None
+    )
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=victim)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    assert victim.google_id is None
+
+
+@respx.mock
+async def test_login_rejects_creating_new_account_when_email_not_verified(
+    oauth_service, user_repo
+):
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="brand-new-sub", email="unverified@example.com", email_verified=False
+    )
+
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=None)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    user_repo.create.assert_not_called()
+    user_repo.session.commit.assert_not_called()
 
 
 @respx.mock
@@ -135,7 +226,12 @@ async def test_login_falls_back_to_email_prefix_when_google_name_is_missing(
     mock_google_token_endpoint()
     respx.get(settings.GOOGLE_USERINFO_URL).mock(
         return_value=Response(
-            200, json={"sub": "no-name-sub", "email": "justanemail@example.com"}
+            200,
+            json={
+                "sub": "no-name-sub",
+                "email": "justanemail@example.com",
+                "email_verified": True,
+            },
         )
     )
 
