@@ -90,9 +90,9 @@ class OAuthService:
             await self.__repo.session.commit()
             await self.__repo.session.refresh(user)
 
-        user.id = str(user.id)
-        access = self.__jwt.create_access_token(user.id)
-        refresh = self.__jwt.create_refresh_token(user.id)
+        user_id = str(user.id)
+        access = self.__jwt.create_access_token(user_id)
+        refresh = self.__jwt.create_refresh_token(user_id)
 
         return {
             "access": access,
