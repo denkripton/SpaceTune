@@ -8,7 +8,7 @@ from src.modules.music.service import TrackService
 from src.modules.music.utils.enums import FileSizeLimit
 from src.utils.exceptions import ServiceError
 
-from tests.factories import make_fake_track, make_fake_user
+from tests.factories import make_fake_bucket_manager, make_fake_track, make_fake_user
 
 
 @pytest.fixture
@@ -237,7 +237,9 @@ async def test_create_track_allows_upload_when_size_is_none(
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch("src.modules.music.service.bucket_manager"),
+        patch(
+            "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
+        ),
     ):
         result = await track_service.create_track(
             user_id=str(owner.id),
@@ -264,7 +266,7 @@ async def test_create_track_raises_422_when_image_size_none_but_stream_exceeds_l
     image_file = make_upload_file(content_type="image/png", size=None)
     image_file.file = io.BytesIO(b"x" * (FileSizeLimit.MAX_IMAGE_SIZE.value + 1))
 
-    def fake_upload_file(file, file_type, key):
+    async def fake_upload_file(file, file_type, key):
         while file.read(1024 * 1024):
             pass
 
@@ -273,10 +275,13 @@ async def test_create_track_raises_422_when_image_size_none_but_stream_exceeds_l
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch(
+            "src.modules.music.service.bucket_manager",
+            make_fake_bucket_manager(
+                upload_file=AsyncMock(side_effect=fake_upload_file)
+            ),
+        ) as fake_bucket,
     ):
-        fake_bucket.upload_file.side_effect = fake_upload_file
-
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
                 user_id=str(owner.id),
@@ -344,7 +349,9 @@ async def test_create_track_success_places_owner_first_in_artists(
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=180_000),
         ) as fake_count_duration,
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch(
+            "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
+        ) as fake_bucket,
     ):
         result = await track_service.create_track(
             user_id=str(owner.id),
@@ -393,7 +400,9 @@ async def test_create_track_raises_service_error_when_db_write_fails():
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch(
+            "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
+        ) as fake_bucket,
     ):
         with pytest.raises(ServiceError) as exc_info:
             await service.create_track(
@@ -440,7 +449,9 @@ async def test_create_track_raises_422_when_db_unique_constraint_violated():
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch(
+            "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
+        ) as fake_bucket,
     ):
         with pytest.raises(ServiceError) as exc_info:
             await service.create_track(
@@ -497,7 +508,9 @@ async def test_delete_track_removes_both_files_from_s3_and_deletes_row(
     track_repo.get_one = AsyncMock(return_value=existing_track)
     track_repo.delete_obj = AsyncMock(return_value=existing_track)
 
-    with patch("src.modules.music.service.bucket_manager") as fake_bucket:
+    with patch(
+        "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
+    ) as fake_bucket:
         result = await track_service.delete_track(
             user_id=str(owner.id), track_id=existing_track.id
         )

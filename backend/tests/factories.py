@@ -73,6 +73,19 @@ def make_fake_profile(
     return profile
 
 
+def make_fake_bucket_manager(**overrides) -> MagicMock:
+    fake = MagicMock()
+    fake.upload_file = AsyncMock(return_value=None)
+    fake.delete_file = AsyncMock(return_value=None)
+    fake.list_objects = AsyncMock(return_value=[])
+    fake.presigned_url = MagicMock(return_value="https://fake-presigned-url")
+
+    for attr, value in overrides.items():
+        setattr(fake, attr, value)
+
+    return fake
+
+
 def make_async_repo_session():
     session = MagicMock()
     session.commit = AsyncMock()
