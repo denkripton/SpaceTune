@@ -1,12 +1,13 @@
 import uuid
 
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import (
     UUID,
     DateTime,
-    func,
     ForeignKey,
+    UniqueConstraint,
+    func,
 )
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.databases import Base
 
@@ -32,6 +33,10 @@ class Grade(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     track_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tracks.id", ondelete="CASCADE")
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "track_id", name="uq_grades_user_track"),
     )
 
     track_conn: Mapped["Track"] = relationship(back_populates="track_grades_conn")
