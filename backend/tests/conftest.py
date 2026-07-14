@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from tests.factories import make_async_repo_session
+from tests.factories import make_async_repo_session, make_fake_uow
 
 
 def pytest_collection_modifyitems(config, items):
@@ -10,7 +10,17 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture
-def track_repo():
+def shared_session():
+    return make_async_repo_session()
+
+
+@pytest.fixture
+def fake_uow(shared_session):
+    return make_fake_uow(session=shared_session)
+
+
+@pytest.fixture
+def track_repo(shared_session):
     repo = MagicMock()
     repo.get_one = AsyncMock(return_value=None)
     repo.get_many = AsyncMock(return_value=[])
@@ -18,12 +28,12 @@ def track_repo():
     repo.get_track_by_owner = AsyncMock(return_value=None)
     repo.create = AsyncMock()
     repo.delete_obj = AsyncMock()
-    repo.session = make_async_repo_session()
+    repo.session = shared_session
     return repo
 
 
 @pytest.fixture
-def user_repo():
+def user_repo(shared_session):
     repo = MagicMock()
     repo.get_one = AsyncMock(return_value=None)
     repo.get_many = AsyncMock(return_value=[])
@@ -31,12 +41,12 @@ def user_repo():
     repo.get_by_email = AsyncMock(return_value=None)
     repo.create = AsyncMock()
     repo.delete_obj = AsyncMock()
-    repo.session = make_async_repo_session()
+    repo.session = shared_session
     return repo
 
 
 @pytest.fixture
-def grade_repo():
+def grade_repo(shared_session):
     repo = MagicMock()
     repo.get_one = AsyncMock(return_value=None)
     repo.get_many = AsyncMock(return_value=[])
@@ -44,12 +54,12 @@ def grade_repo():
     repo.get_user_by_id = AsyncMock(return_value=None)
     repo.create = AsyncMock()
     repo.delete_obj = AsyncMock()
-    repo.session = make_async_repo_session()
+    repo.session = shared_session
     return repo
 
 
 @pytest.fixture
-def profile_repo():
+def profile_repo(shared_session):
     repo = MagicMock()
     repo.get_one = AsyncMock(return_value=None)
     repo.get_many = AsyncMock(return_value=[])
@@ -57,7 +67,7 @@ def profile_repo():
     repo.get_user_by_id = AsyncMock(return_value=None)
     repo.create = AsyncMock()
     repo.delete_obj = AsyncMock()
-    repo.session = make_async_repo_session()
+    repo.session = shared_session
     return repo
 
 

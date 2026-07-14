@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
@@ -32,6 +33,7 @@ def track_service(db_session):
         track_repo=TrackRepository(session=db_session),
         user_repo=UserRepository(session=db_session),
         grade_repo=GradeRepository(session=db_session),
+        uow=UnitOfWork(db_session),
     )
 
 

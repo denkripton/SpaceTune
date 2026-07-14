@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 import respx
 from httpx import Response
+from sqlalchemy.exc import IntegrityError
 from src.config import settings
 from src.modules.auth.services.oauth import OAuthService
 from src.utils.exceptions import ServiceError
@@ -12,8 +13,8 @@ from tests.factories import make_fake_user
 
 
 @pytest.fixture
-def oauth_service(user_repo, fake_jwt):
-    return OAuthService(repo=user_repo, jwt=fake_jwt)
+def oauth_service(user_repo, fake_jwt, fake_uow):
+    return OAuthService(repo=user_repo, jwt=fake_jwt, uow=fake_uow)
 
 
 def mock_google_token_endpoint(
@@ -190,6 +191,64 @@ async def test_login_rejects_creating_new_account_when_email_not_verified(
     assert exc_info.value.status_code == 422
     user_repo.create.assert_not_called()
     user_repo.session.commit.assert_not_called()
+
+
+@respx.mock
+async def test_login_raises_422_when_concurrent_request_creates_account_first(
+    oauth_service, user_repo
+):
+    """
+    Simulates the race window: two concurrent OAuth logins for a brand-new
+    email both pass the pre-checks (get_one/get_by_email both return None),
+    but the second one's commit() hits the unique constraint because the
+    first request already committed. This must surface as a clean 422,
+    not an unhandled IntegrityError bubbling up as a 500.
+    """
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="racing-sub", email="racing@example.com", name="Racer"
+    )
+
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=None)
+    user_repo.create = AsyncMock(return_value=make_fake_user(email="racing@example.com"))
+    user_repo.session.commit = AsyncMock(
+        side_effect=IntegrityError("duplicate key value", {}, Exception())
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    user_repo.session.rollback.assert_awaited_once()
+
+
+@respx.mock
+async def test_login_raises_422_when_concurrent_request_links_account_first(
+    oauth_service, user_repo
+):
+    """
+    Same race, but on the linking path: two concurrent logins for the same
+    already-registered email both see google_id unset, but the second
+    commit() collides on the unique google_id constraint.
+    """
+    mock_google_token_endpoint()
+    mock_google_userinfo_endpoint(
+        sub="racing-sub", email="existing@example.com", email_verified=True
+    )
+
+    existing_user = make_fake_user(email="existing@example.com", google_id=None)
+    user_repo.get_one = AsyncMock(return_value=None)
+    user_repo.get_by_email = AsyncMock(return_value=existing_user)
+    user_repo.session.commit = AsyncMock(
+        side_effect=IntegrityError("duplicate key value", {}, Exception())
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        await oauth_service.login(code="valid-code")
+
+    assert exc_info.value.status_code == 422
+    user_repo.session.rollback.assert_awaited_once()
 
 
 @respx.mock

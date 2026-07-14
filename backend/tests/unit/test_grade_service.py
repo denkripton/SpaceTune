@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from src.modules.grades.service import GradeService
 from src.utils.exceptions import ServiceError
 
@@ -9,9 +10,9 @@ from tests.factories import make_fake_grade, make_fake_track, make_fake_user
 
 
 @pytest.fixture
-def grade_service(track_repo, user_repo, grade_repo):
+def grade_service(track_repo, user_repo, grade_repo, fake_uow):
     return GradeService(
-        track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo
+        track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo, uow=fake_uow
     )
 
 
@@ -95,6 +96,30 @@ async def test_grade_track_updates_existing_grade_instead_of_creating_new_one(
     grade_repo.session.commit.assert_awaited_once()
     assert "10" in result
     assert "Already Rated Track" in result
+
+
+async def test_grade_track_raises_422_when_concurrent_request_creates_grade_first(
+    grade_service, user_repo, track_repo, grade_repo
+):
+    user = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=user)
+
+    track = make_fake_track()
+    track_repo.get_one = AsyncMock(return_value=track)
+    grade_repo.get_one = AsyncMock(return_value=None)
+    grade_repo.create = AsyncMock(return_value=make_fake_grade())
+    grade_repo.session.commit = AsyncMock(
+        side_effect=IntegrityError("duplicate key value", {}, Exception())
+    )
+
+    with pytest.raises(ServiceError) as exc_info:
+        await grade_service.grade_track(
+            user_id=user.id, track_id=track.id, user_grade=7
+        )
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.message == "You have already graded this track"
+    grade_repo.session.rollback.assert_awaited_once()
 
 
 async def test_grade_track_rolls_back_on_create_failure(

@@ -11,8 +11,8 @@ from tests.factories import make_fake_profile, make_fake_user
 
 
 @pytest.fixture
-def profile_service(user_repo, profile_repo):
-    return ProfileService(repo=user_repo, profile_repo=profile_repo)
+def profile_service(user_repo, profile_repo, fake_uow):
+    return ProfileService(repo=user_repo, profile_repo=profile_repo, uow=fake_uow)
 
 
 def make_creation_schema(

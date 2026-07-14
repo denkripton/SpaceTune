@@ -7,6 +7,8 @@ from src.modules.grades.models import Grade
 from src.modules.music.models import Track
 from src.modules.profile.models import Profile
 
+from src.utils import UnitOfWork
+
 
 def make_fake_user(
     user_id=None,
@@ -94,6 +96,10 @@ def make_async_repo_session():
     session.add = MagicMock()
     session.delete = AsyncMock()
     return session
+
+
+def make_fake_uow(session=None) -> "UnitOfWork":
+    return UnitOfWork(session or make_async_repo_session())
 
 
 async def create_real_user(

@@ -8,13 +8,18 @@ from src.modules.music.service import TrackService
 from src.modules.music.utils.enums import FileSizeLimit
 from src.utils.exceptions import ServiceError
 
-from tests.factories import make_fake_bucket_manager, make_fake_track, make_fake_user
+from tests.factories import (
+    make_fake_bucket_manager,
+    make_fake_track,
+    make_fake_uow,
+    make_fake_user,
+)
 
 
 @pytest.fixture
-def track_service(track_repo, user_repo, grade_repo):
+def track_service(track_repo, user_repo, grade_repo, fake_uow):
     return TrackService(
-        track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo
+        track_repo=track_repo, user_repo=user_repo, grade_repo=grade_repo, uow=fake_uow
     )
 
 
@@ -382,14 +387,18 @@ async def test_create_track_raises_service_error_when_db_write_fails():
 
     track_repo_mock = MagicMock()
     track_repo_mock.get_one = AsyncMock(return_value=None)
-    track_repo_mock.create = AsyncMock(side_effect=Exception("duplicate key value"))
+    track_repo_mock.create = AsyncMock(return_value=make_fake_track(owner_id=owner.id))
     track_repo_mock.session = MagicMock()
-    track_repo_mock.session.commit = AsyncMock()
+    track_repo_mock.session.commit = AsyncMock(side_effect=Exception("connection lost"))
     track_repo_mock.session.rollback = AsyncMock()
     track_repo_mock.session.refresh = AsyncMock()
+    uow = make_fake_uow(session=track_repo_mock.session)
 
     service = TrackService(
-        track_repo=track_repo_mock, user_repo=user_repo_mock, grade_repo=MagicMock()
+        track_repo=track_repo_mock,
+        user_repo=user_repo_mock,
+        grade_repo=MagicMock(),
+        uow=uow,
     )
 
     creation_data = MagicMock()
@@ -427,18 +436,22 @@ async def test_create_track_raises_422_when_db_unique_constraint_violated():
 
     track_repo_mock = MagicMock()
     track_repo_mock.get_one = AsyncMock(return_value=None)
-    track_repo_mock.create = AsyncMock(
+    track_repo_mock.create = AsyncMock(return_value=make_fake_track(owner_id=owner.id))
+    track_repo_mock.session = MagicMock()
+    track_repo_mock.session.commit = AsyncMock(
         side_effect=IntegrityError(
             "duplicate key value", {}, Exception("duplicate key value")
         )
     )
-    track_repo_mock.session = MagicMock()
-    track_repo_mock.session.commit = AsyncMock()
     track_repo_mock.session.rollback = AsyncMock()
     track_repo_mock.session.refresh = AsyncMock()
+    uow = make_fake_uow(session=track_repo_mock.session)
 
     service = TrackService(
-        track_repo=track_repo_mock, user_repo=user_repo_mock, grade_repo=MagicMock()
+        track_repo=track_repo_mock,
+        user_repo=user_repo_mock,
+        grade_repo=MagicMock(),
+        uow=uow,
     )
 
     creation_data = MagicMock()

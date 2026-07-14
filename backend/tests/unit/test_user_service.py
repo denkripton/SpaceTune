@@ -10,8 +10,8 @@ from tests.factories import make_fake_user
 
 
 @pytest.fixture
-def user_service(user_repo, fake_jwt):
-    return UserService(repo=user_repo, jwt=fake_jwt)
+def user_service(user_repo, fake_jwt, fake_uow):
+    return UserService(repo=user_repo, jwt=fake_jwt, uow=fake_uow)
 
 
 def make_creation_schema(
