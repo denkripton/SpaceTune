@@ -36,8 +36,9 @@ class OAuthServiceFactory:
         self,
         user_repo: UserRepository,
         jwt: JWT,
+        uow: UnitOfWork,
     ) -> OAuthService:
-        return self.service_cls(repo=user_repo, jwt=jwt)
+        return self.service_cls(repo=user_repo, jwt=jwt, uow=uow)
 
 
 user_service_factory = UserServiceFactory()
@@ -55,8 +56,9 @@ def get_user_service(
 def get_oauth_service(
     user_repo: UserRepository = Depends(user_repository),
     jwt: JWT = Depends(get_jwt_service),
+    uow: UnitOfWork = Depends(get_unit_of_work),
 ) -> OAuthService:
-    return oauth_service_factory.create(user_repo=user_repo, jwt=jwt)
+    return oauth_service_factory.create(user_repo=user_repo, jwt=jwt, uow=uow)
 
 
 async def get_current_user(

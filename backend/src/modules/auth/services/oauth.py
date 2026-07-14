@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 import httpx
 
 from src.config import settings
+from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.utils import JWT
 from src.utils.exceptions import ServiceError
@@ -13,9 +14,10 @@ class OAuthService:
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
     STATE_BYTES = 32
 
-    def __init__(self, repo: UserRepository, jwt: JWT):
+    def __init__(self, repo: UserRepository, jwt: JWT, uow: UnitOfWork):
         self.__repo = repo
         self.__jwt = jwt
+        self.__uow = uow
 
     def generate_state(self) -> str:
         return secrets.token_urlsafe(self.STATE_BYTES)
@@ -95,8 +97,10 @@ class OAuthService:
                     google_id=sub,
                 )
 
-            await self.__repo.session.commit()
-            await self.__repo.session.refresh(user)
+            await self.__uow.commit(
+                conflict_msg="Account with this email or Google ID was just created. Please try again"
+            )
+            await self.__uow.refresh(user)
 
         user_id = str(user.id)
         access = self.__jwt.create_access_token(user_id)
