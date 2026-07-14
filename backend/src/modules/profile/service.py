@@ -1,13 +1,11 @@
 import uuid
 
-from src.utils.exceptions import ServiceError
-
+from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.profile.repository import ProfileRepository
-
 from src.modules.profile.schemas.creation import ProfileCreationSchema
-
 from src.modules.profile.utils import assemble
+from src.utils.exceptions import ServiceError
 
 
 class ProfileService:
@@ -15,9 +13,11 @@ class ProfileService:
         self,
         repo: UserRepository,
         profile_repo: ProfileRepository,
+        uow: UnitOfWork,
     ):
         self.__profile_repo = profile_repo
         self.__user_repo = repo
+        self.__uow = uow
 
     async def create_profile(self, user_id: str, data: ProfileCreationSchema):
 
@@ -38,8 +38,8 @@ class ProfileService:
         data["user_id"] = user_id
         profile = await self.__profile_repo.create(**data)
 
-        await self.__profile_repo.session.commit()
-        await self.__profile_repo.session.refresh(profile)
+        await self.__uow.commit(conflict_msg="Profile already created")
+        await self.__uow.refresh(profile)
         return profile
 
     async def get_my_profile(self, user_id):
@@ -70,7 +70,7 @@ class ProfileService:
             raise ServiceError(code=422, msg="Profile does not exist")
 
         await self.__profile_repo.delete_obj(existing_profile.id)
-        await self.__profile_repo.session.commit()
+        await self.__uow.commit()
         return "Profile has been deleted succesfuly"
 
     async def update_username(self, user_id, new_username):
@@ -86,6 +86,6 @@ class ProfileService:
 
         existing_user.username = new_username
 
-        await self.__user_repo.session.commit()
-        await self.__user_repo.session.refresh(existing_user)
+        await self.__uow.commit(conflict_msg="That username already taken")
+        await self.__uow.refresh(existing_user)
         return await assemble(user=existing_user, repo=self.__profile_repo)
