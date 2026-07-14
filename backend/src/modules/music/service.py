@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy.exc import IntegrityError
-
 from src.aws import bucket_manager
+from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.config import logger
@@ -24,10 +23,12 @@ class TrackService:
         track_repo: TrackRepository,
         user_repo: UserRepository,
         grade_repo: GradeRepository,
+        uow: UnitOfWork,
     ):
         self.__track_repo = track_repo
         self.__user_repo = user_repo
         self.__grade_repo = grade_repo
+        self.__uow = uow
 
     async def create_track(
         self, user_id: str, data: TrackCreationSchema, music_file, image_file
@@ -101,16 +102,14 @@ class TrackService:
 
         try:
             track = await self.__track_repo.create(**data)
-            await self.__track_repo.session.commit()
-            await self.__track_repo.session.refresh(track)
-        except IntegrityError as e:
-            await self.__track_repo.session.rollback()
+            await self.__uow.commit(conflict_msg="Track already exist")
+            await self.__uow.refresh(track)
+        except ServiceError:
             await bucket_manager.delete_file(key=track_aws_key)
             await bucket_manager.delete_file(key=image_aws_key)
-            logger.warning(e)
-            raise ServiceError(code=422, msg="Track already exist") from e
+            raise
         except Exception as e:
-            await self.__track_repo.session.rollback()
+            await self.__uow.rollback()
             await bucket_manager.delete_file(key=track_aws_key)
             await bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
@@ -138,9 +137,9 @@ class TrackService:
 
         try:
             await self.__track_repo.delete_obj(id=existing_track.id)
-            await self.__track_repo.session.commit()
+            await self.__uow.commit()
         except Exception as e:
-            await self.__track_repo.session.rollback()
+            await self.__uow.rollback()
             logger.warning(e)
             raise ServiceError(code=500, msg="Failed to delete track") from e
 
