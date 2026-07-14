@@ -1,9 +1,10 @@
-from src.utils.exceptions import ServiceError
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCreateSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.utils import JWT, pw_manager
+from src.utils import UnitOfWork
+from src.utils.exceptions import ServiceError
 
 
 class UserService:
@@ -11,9 +12,11 @@ class UserService:
         self,
         repo: UserRepository,
         jwt: JWT,
+        uow: UnitOfWork,
     ):
         self.__repo = repo
         self.__jwt = jwt
+        self.__uow = uow
 
     async def register(self, data: UserCreateSchema):
         data = data.model_dump()
@@ -32,8 +35,8 @@ class UserService:
 
         user = await self.__repo.create(**data)
 
-        await self.__repo.session.commit()
-        await self.__repo.session.refresh(user)
+        await self.__uow.commit(conflict_msg="User already exists")
+        await self.__uow.refresh(user)
         return user
 
     async def login(self, data: UserLoginSchema):
@@ -41,14 +44,13 @@ class UserService:
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
-        
+
         if existing_user.password is None:
             raise ServiceError(code=422, msg="Password does not exist, set it")
 
         password_check = pw_manager.check_password(
             data.password, existing_user.password
         )
-        existing_user.id = str(existing_user.id)
 
         if password_check is False:
             raise ServiceError(code=403, msg="Incorrect password")
@@ -75,8 +77,8 @@ class UserService:
 
         existing_user.password = pw_manager.hash_password(data["password"])
 
-        await self.__repo.session.commit()
-        await self.__repo.session.refresh(existing_user)
+        await self.__uow.commit()
+        await self.__uow.refresh(existing_user)
 
         return "Password added successfully"
 
@@ -100,7 +102,7 @@ class UserService:
 
         existing_user.password = pw_manager.hash_password(data["new_password"])
 
-        await self.__repo.session.commit()
-        await self.__repo.session.refresh(existing_user)
+        await self.__uow.commit()
+        await self.__uow.refresh(existing_user)
 
         return "Password changed successfully"
