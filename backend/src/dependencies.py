@@ -1,7 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.databases import AsyncSessionLocal
+from src.utils import UnitOfWork
 
 
 async def get_session() -> AsyncSession:
@@ -10,6 +11,10 @@ async def get_session() -> AsyncSession:
             yield session
         finally:
             await session.close()
+
+
+async def get_unit_of_work(session: AsyncSession = Depends(get_session)) -> UnitOfWork:
+    return UnitOfWork(session)
 
 
 class RepoFactory:
