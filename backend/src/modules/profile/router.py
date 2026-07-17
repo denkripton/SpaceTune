@@ -2,21 +2,19 @@ from typing import Union
 
 from fastapi import APIRouter, Depends
 
-from src.modules.profile.dependencies import get_profile_service
 from src.modules.auth.dependencies import get_current_user
-from src.modules.profile.service import ProfileService
-from src.utils.routing.error_handling import ErrorHandlingRoute
-
-from src.modules.profile.schemas.creation import ProfileCreationSchema
-from src.modules.profile.schemas.read import ProfileReadSchema
-
-from src.modules.auth.schemas.user.read import UserRead
-
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.user import UserRead
+from src.modules.profile.dependencies import get_profile_service
+from src.modules.profile.schemas.creation import ProfileCreationSchema
 from src.modules.profile.schemas.exceptions.profile_422 import Profile422
-
-from src.modules.auth.schemas.exceptions.password_403 import Password403
+from src.modules.profile.schemas.read import (
+    ProfilePrivateReadSchema,
+    ProfilePublicReadSchema,
+)
+from src.modules.profile.service import ProfileService
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
 profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
 
@@ -45,10 +43,9 @@ async def create_my_profile(
     summary="Update username (Protected)",
     tags=["Profile CRUD's"],
     description="Change your username",
-    response_model=Union[ProfileReadSchema, UserRead],
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        403: {"model": Password403},
         422: {"model": User422},
     },
 )
@@ -65,7 +62,7 @@ async def update_me(
     summary="Read your profile (Protected)",
     tags=["Profile CRUD's"],
     description="Get your profile",
-    response_model=Union[ProfileReadSchema, UserRead],
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
         422: {"model": User422},
@@ -82,8 +79,12 @@ async def get_my_profile(
     "/{user_id}",
     summary="Read user profile",
     tags=["Profile CRUD's"],
-    description="Get user profile by user_id",
-    response_model=Union[ProfileReadSchema, UserRead],
+    description=(
+        "Get another user's public profile. Only fields the profile "
+        "owner has opted to make visible are returned — everything else "
+        "comes back as null."
+    ),
+    response_model=Union[ProfilePublicReadSchema, UserRead],
     responses={
         422: {"model": User422},
     },

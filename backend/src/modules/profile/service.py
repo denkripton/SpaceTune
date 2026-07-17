@@ -1,10 +1,10 @@
 import uuid
 
-from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.profile.repository import ProfileRepository
 from src.modules.profile.schemas.creation import ProfileCreationSchema
-from src.modules.profile.utils import assemble
+from src.modules.profile.utils import profile_assembler
+from src.utils import UnitOfWork
 from src.utils.exceptions import ServiceError
 
 
@@ -48,7 +48,9 @@ class ProfileService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        return await assemble(user=existing_user, repo=self.__profile_repo)
+        return await profile_assembler.owner(
+            user=existing_user, repo=self.__profile_repo
+        )
 
     async def get_user_profile(self, user_id):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
@@ -56,7 +58,9 @@ class ProfileService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        return await assemble(user=existing_user, repo=self.__profile_repo)
+        return await profile_assembler.public(
+            user=existing_user, repo=self.__profile_repo
+        )
 
     async def delete_profile(self, user_id):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
@@ -88,4 +92,6 @@ class ProfileService:
 
         await self.__uow.commit(conflict_msg="That username already taken")
         await self.__uow.refresh(existing_user)
-        return await assemble(user=existing_user, repo=self.__profile_repo)
+        return await profile_assembler.owner(
+            user=existing_user, repo=self.__profile_repo
+        )
