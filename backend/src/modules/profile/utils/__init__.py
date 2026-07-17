@@ -1,3 +1,3 @@
-from src.modules.profile.utils.assemble import assemble
+from src.modules.profile.utils.assemble import profile_assembler
 
-__all__ = ["assemble"]
+__all__ = ["profile_assembler"]
