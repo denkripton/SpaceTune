@@ -1,11 +1,11 @@
 from typing import Union
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 
 from src.modules.auth.dependencies import get_current_user
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
-from src.modules.auth.schemas.user import UserRead
+from src.modules.auth.schemas.user.read import UserRead
 from src.modules.profile.dependencies import get_profile_service
 from src.modules.profile.schemas.creation import ProfileCreationSchema
 from src.modules.profile.schemas.exceptions.profile_422 import Profile422
@@ -55,6 +55,25 @@ async def update_me(
     service: ProfileService = Depends(get_profile_service),
 ):
     return await service.update_username(user_id=user_id, new_username=new_username)
+
+
+@profile_router.post(
+    "/me/photo",
+    summary="Upload profile photo (Protected)",
+    tags=["Profile CRUD's"],
+    description="Upload or replace your profile photo",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def upload_my_photo(
+    photo_file: UploadFile = File(),
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.upload_photo(user_id=user_id, photo_file=photo_file)
 
 
 @profile_router.get(
