@@ -3,7 +3,10 @@ import uuid
 from src.aws import bucket_manager
 from src.modules.auth.repository import UserRepository
 from src.modules.profile.repository import ProfileRepository
-from src.modules.profile.schemas.creation import ProfileCreationSchema
+from src.modules.profile.schemas import (
+    ProfileCreationSchema,
+    ProfileUpdateSchema,
+)
 from src.modules.profile.utils import profile_assembler
 from src.modules.profile.utils.enums import PFPSizeLimit, ProfileMediaTypes
 from src.utils import UnitOfWork
@@ -103,6 +106,26 @@ class ProfileService:
 
         await self.__uow.commit(conflict_msg="That username already taken")
         await self.__uow.refresh(existing_user)
+        return await profile_assembler.owner(
+            user=existing_user, repo=self.__profile_repo
+        )
+
+    async def update_profile(self, user_id, data: ProfileUpdateSchema):
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise ServiceError(code=422, msg="User does not exist")
+
+        existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
+
+        if existing_profile is None:
+            raise ServiceError(code=422, msg="Profile does not exist")
+
+        for field_name in data.model_fields_set:
+            setattr(existing_profile, field_name, getattr(data, field_name))
+
+        await self.__uow.commit()
+        await self.__uow.refresh(existing_profile)
         return await profile_assembler.owner(
             user=existing_user, repo=self.__profile_repo
         )

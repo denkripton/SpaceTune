@@ -13,6 +13,7 @@ from src.modules.profile.schemas.read import (
     ProfilePrivateReadSchema,
     ProfilePublicReadSchema,
 )
+from src.modules.profile.schemas.update import ProfileUpdateSchema
 from src.modules.profile.service import ProfileService
 from src.utils.routing.error_handling import ErrorHandlingRoute
 
@@ -49,12 +50,33 @@ async def create_my_profile(
         422: {"model": User422},
     },
 )
-async def update_me(
+async def update_username(
     new_username: str,
     user_id: str = Depends(get_current_user),
     service: ProfileService = Depends(get_profile_service),
 ):
     return await service.update_username(user_id=user_id, new_username=new_username)
+
+
+@profile_router.patch(
+    "/me/profile",
+    summary="Update profile details (Protected)",
+    tags=["Profile CRUD's"],
+    description=(
+        "Partially update your profile's bio, country, phone_number, or birth_date"
+    ),
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def update_profile_details(
+    data: ProfileUpdateSchema,
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.update_profile(user_id=user_id, data=data)
 
 
 @profile_router.post(
