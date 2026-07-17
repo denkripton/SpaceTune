@@ -1,10 +1,13 @@
 import uuid
 from typing import Optional
 
+from sqlalchemy import UUID, Date, DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, UUID, DateTime, Date, Text, func, ForeignKey
 
 from src.databases import Base
+from src.modules.profile.utils.enums import FieldsVisibility
 
 
 class Profile(Base):
@@ -18,6 +21,13 @@ class Profile(Base):
     bio: Mapped[Optional[str]] = mapped_column(Text)
     country: Mapped[Optional[str]] = mapped_column(String(50))
     phone_number: Mapped[Optional[str]] = mapped_column(String(50))
+    photo_url: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
+
+    visible_fields: Mapped[dict] = mapped_column(
+        MutableDict.as_mutable(JSONB),
+        nullable=False,
+        default=lambda: dict(FieldsVisibility.DEFAULT_VISIBLE_FIELDS.value),
+    )
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
