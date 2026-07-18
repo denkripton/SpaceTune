@@ -26,6 +26,14 @@ class ProfileAssembler:
     def _field_if_visible(self, profile, field_name: str, value):
         return value if self._is_field_visible(profile, field_name) else None
 
+    def _sanitized_visible_fields(self, profile) -> dict[str, bool]:
+        raw = profile.visible_fields or {}
+        return {
+            field: bool(raw[field])
+            for field in FieldsVisibility.VISIBILITY_TOGGLEABLE_FIELDS.value
+            if field in raw
+        }
+
     async def owner(self, user, repo) -> ProfilePrivateReadSchema | UserRead:
         existing_profile = await repo.get_one(user_id=user.id)
         if existing_profile is None:
@@ -40,13 +48,15 @@ class ProfileAssembler:
             bio=existing_profile.bio,
             country=existing_profile.country,
             phone_number=existing_profile.phone_number,
-            visible_fields=existing_profile.visible_fields,
+            visible_fields=self._sanitized_visible_fields(existing_profile),
         )
 
-    async def public(self, user, repo) -> ProfilePublicReadSchema | UserRead:
+    async def public(self, user, repo) -> ProfilePublicReadSchema:
         existing_profile = await repo.get_one(user_id=user.id)
         if existing_profile is None:
-            return UserRead(id=user.id, username=user.username, email=user.email)
+            return ProfilePublicReadSchema(
+                id=user.id, username=user.username, photo_url=None
+            )
 
         return ProfilePublicReadSchema(
             id=user.id,
