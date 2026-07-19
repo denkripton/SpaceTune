@@ -3,11 +3,9 @@ import uuid
 from src.aws import bucket_manager
 from src.modules.auth.repository import UserRepository
 from src.modules.profile.repository import ProfileRepository
-from src.modules.profile.schemas import (
-    ProfileCreationSchema,
-    ProfileUpdateSchema,
-    ProfileVisibilityUpdateSchema,
-)
+from src.modules.profile.schemas.creation import ProfileCreationSchema
+from src.modules.profile.schemas.update import ProfileUpdateSchema
+from src.modules.profile.schemas.visibility import ProfileVisibilityUpdateSchema
 from src.modules.profile.utils import profile_assembler
 from src.modules.profile.utils.enums import PFPSizeLimit, ProfileMediaTypes
 from src.utils import UnitOfWork
@@ -141,7 +139,8 @@ class ProfileService:
 
         if existing_profile is None:
             raise ServiceError(code=422, msg="Profile does not exist")
-        existing_profile.visible_fields.update(data.visible_fields)
+        updates = data.model_dump(exclude_unset=True)
+        existing_profile.visible_fields.update(updates)
 
         await self.__uow.commit()
         await self.__uow.refresh(existing_profile)
@@ -192,6 +191,34 @@ class ProfileService:
                 await bucket_manager.delete_file(key=old_photo_key)
             except Exception:
                 pass
+
+        return await profile_assembler.owner(
+            user=existing_user, repo=self.__profile_repo
+        )
+
+    async def delete_photo(self, user_id):
+        existing_user = await self.__user_repo.get_by_id(id=user_id)
+
+        if existing_user is None:
+            raise ServiceError(code=422, msg="User does not exist")
+
+        existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
+
+        if existing_profile is None:
+            raise ServiceError(code=422, msg="Profile does not exist")
+
+        if existing_profile.photo_url is None:
+            raise ServiceError(code=422, msg="No photo set for this profile")
+
+        old_photo_key = existing_profile.photo_url
+        existing_profile.photo_url = None
+        await self.__uow.commit()
+        await self.__uow.refresh(existing_profile)
+
+        try:
+            await bucket_manager.delete_file(key=old_photo_key)
+        except Exception:
+            pass
 
         return await profile_assembler.owner(
             user=existing_user, repo=self.__profile_repo

@@ -11,10 +11,10 @@ from src.modules.profile.schemas import (
     ProfileCreationSchema,
     ProfilePrivateReadSchema,
     ProfilePublicReadSchema,
+    ProfileUpdateSchema,
     ProfileVisibilityUpdateSchema,
 )
 from src.modules.profile.schemas.exceptions.profile_422 import Profile422
-from src.modules.profile.schemas.update import ProfileUpdateSchema
 from src.modules.profile.service import ProfileService
 from src.utils.routing.error_handling import ErrorHandlingRoute
 
@@ -147,7 +147,7 @@ async def get_my_profile(
         "owner has opted to make visible are returned — everything else "
         "comes back as null."
     ),
-    response_model=Union[ProfilePublicReadSchema, UserRead],
+    response_model=ProfilePublicReadSchema,
     responses={
         422: {"model": User422},
     },
@@ -156,6 +156,24 @@ async def get_user_profile(
     user_id: str, service: ProfileService = Depends(get_profile_service)
 ):
     return await service.get_user_profile(user_id=user_id)
+
+
+@profile_router.delete(
+    "/me/photo",
+    summary="Remove profile photo (Protected)",
+    tags=["Profile CRUD's"],
+    description="Remove your profile photo, independent of deleting the whole profile",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def delete_my_photo(
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.delete_photo(user_id=user_id)
 
 
 @profile_router.delete(
