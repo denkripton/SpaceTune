@@ -21,7 +21,6 @@ class Profile(Base):
     bio: Mapped[Optional[str]] = mapped_column(Text)
     country: Mapped[Optional[str]] = mapped_column(String(50))
     phone_number: Mapped[Optional[str]] = mapped_column(String(50))
-    photo_url: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
 
     visible_fields: Mapped[dict] = mapped_column(
         MutableDict.as_mutable(JSONB),

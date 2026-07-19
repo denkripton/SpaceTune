@@ -17,6 +17,8 @@ class User(Base):
     password: Mapped[Optional[bytes]] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
+    photo_url: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
+
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

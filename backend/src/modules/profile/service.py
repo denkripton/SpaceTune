@@ -78,15 +78,8 @@ class ProfileService:
         if existing_profile is None:
             raise ServiceError(code=422, msg="Profile does not exist")
 
-        photo_key = existing_profile.photo_url
         await self.__profile_repo.delete_obj(existing_profile.id)
         await self.__uow.commit()
-
-        if photo_key is not None:
-            try:
-                await bucket_manager.delete_file(key=photo_key)
-            except Exception:
-                pass
 
         return "Profile has been deleted succesfuly"
 
@@ -154,11 +147,6 @@ class ProfileService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
-
-        if existing_profile is None:
-            raise ServiceError(code=422, msg="Profile does not exist")
-
         if photo_file.content_type not in ProfileMediaTypes.PHOTO_TYPES.value:
             raise ServiceError(code=422, msg="Invalid image file type")
 
@@ -168,7 +156,7 @@ class ProfileService:
         ):
             raise ServiceError(code=422, msg="Photo file is too big")
 
-        old_photo_key = existing_profile.photo_url
+        old_photo_key = existing_user.photo_url
         new_photo_key = f"profile/{existing_user.id}/{uuid.uuid4()}"
 
         try:
@@ -183,9 +171,10 @@ class ProfileService:
         except FileSizeLimitExceeded as e:
             raise ServiceError(code=422, msg="Photo file is too big") from e
 
-        existing_profile.photo_url = new_photo_key
+        existing_user.photo_url = new_photo_key
         await self.__uow.commit()
-        await self.__uow.refresh(existing_profile)
+        await self.__uow.refresh(existing_user)
+
         if old_photo_key is not None:
             try:
                 await bucket_manager.delete_file(key=old_photo_key)
@@ -202,18 +191,13 @@ class ProfileService:
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
+        if existing_user.photo_url is None:
+            raise ServiceError(code=422, msg="No photo set for this user")
 
-        if existing_profile is None:
-            raise ServiceError(code=422, msg="Profile does not exist")
-
-        if existing_profile.photo_url is None:
-            raise ServiceError(code=422, msg="No photo set for this profile")
-
-        old_photo_key = existing_profile.photo_url
-        existing_profile.photo_url = None
+        old_photo_key = existing_user.photo_url
+        existing_user.photo_url = None
         await self.__uow.commit()
-        await self.__uow.refresh(existing_profile)
+        await self.__uow.refresh(existing_user)
 
         try:
             await bucket_manager.delete_file(key=old_photo_key)

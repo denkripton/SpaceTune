@@ -11,10 +11,10 @@ class ProfileAssembler:
     def __init__(self, bucket_manager=default_bucket_manager):
         self._bucket_manager = bucket_manager
 
-    def _resolve_photo_url(self, profile) -> str | None:
-        if profile is None or profile.photo_url is None:
+    def _resolve_photo_url(self, user) -> str | None:
+        if user is None or user.photo_url is None:
             return None
-        return self._bucket_manager.presigned_url(key=profile.photo_url)
+        return self._bucket_manager.presigned_url(key=user.photo_url)
 
     def _is_field_visible(self, profile, field_name: str) -> bool:
         visible = profile.visible_fields or {}
@@ -37,13 +37,23 @@ class ProfileAssembler:
     async def owner(self, user, repo) -> ProfilePrivateReadSchema | UserRead:
         existing_profile = await repo.get_one(user_id=user.id)
         if existing_profile is None:
-            return UserRead(id=user.id, username=user.username, email=user.email)
+            return ProfilePrivateReadSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                photo_url=self._resolve_photo_url(user),
+                birth_date=None,
+                bio=None,
+                country=None,
+                phone_number=None,
+                visible_fields=dict(FieldsVisibility.DEFAULT_VISIBLE_FIELDS.value),
+            )
 
         return ProfilePrivateReadSchema(
             id=user.id,
             username=user.username,
             email=user.email,
-            photo_url=self._resolve_photo_url(existing_profile),
+            photo_url=self._resolve_photo_url(user),
             birth_date=existing_profile.birth_date,
             bio=existing_profile.bio,
             country=existing_profile.country,
@@ -55,13 +65,15 @@ class ProfileAssembler:
         existing_profile = await repo.get_one(user_id=user.id)
         if existing_profile is None:
             return ProfilePublicReadSchema(
-                id=user.id, username=user.username, photo_url=None
+                id=user.id,
+                username=user.username,
+                photo_url=self._resolve_photo_url(user),
             )
 
         return ProfilePublicReadSchema(
             id=user.id,
             username=user.username,
-            photo_url=self._resolve_photo_url(existing_profile),
+            photo_url=self._resolve_photo_url(user),
             email=self._field_if_visible(existing_profile, "email", user.email),
             birth_date=self._field_if_visible(
                 existing_profile, "birth_date", existing_profile.birth_date
