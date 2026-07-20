@@ -6,7 +6,6 @@ from src.modules.auth.models import User
 from src.modules.grades.models import Grade
 from src.modules.music.models import Track
 from src.modules.profile.models import Profile
-
 from src.utils import UnitOfWork
 
 
@@ -16,6 +15,7 @@ def make_fake_user(
     email="denkripton@example.com",
     password=b"$2b$12$fakefakefakefakefakefakefakefakefake",
     google_id=None,
+    photo_url=None,
 ):
     user = MagicMock()
     user.id = user_id or uuid.uuid4()
@@ -23,6 +23,7 @@ def make_fake_user(
     user.email = email
     user.password = password
     user.google_id = google_id
+    user.photo_url = photo_url
     return user
 
 
@@ -64,7 +65,10 @@ def make_fake_profile(
     bio="Just a track creator",
     country="Ukraine",
     phone_number="+380999999999",
+    visible_fields=None,
 ):
+    from src.modules.profile.utils.enums import FieldsVisibility
+
     profile = MagicMock()
     profile.id = profile_id or uuid.uuid4()
     profile.user_id = user_id or uuid.uuid4()
@@ -72,6 +76,11 @@ def make_fake_profile(
     profile.bio = bio
     profile.country = country
     profile.phone_number = phone_number
+    profile.visible_fields = (
+        dict(visible_fields)
+        if visible_fields is not None
+        else dict(FieldsVisibility.DEFAULT_VISIBLE_FIELDS.value)
+    )
     return profile
 
 
