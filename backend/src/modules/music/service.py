@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 from src.aws import bucket_manager
-from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.config import logger
@@ -13,6 +12,7 @@ from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.utils import count_duration
 from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
+from src.utils import UnitOfWork
 from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
 from src.utils.uploads import SizeLimitedStream
 
@@ -135,6 +135,9 @@ class TrackService:
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
+        track_photo = existing_track.photo_url
+        track_audio = existing_track.track_url
+
         try:
             await self.__track_repo.delete_obj(id=existing_track.id)
             await self.__uow.commit()
@@ -143,8 +146,15 @@ class TrackService:
             logger.warning(e)
             raise ServiceError(code=500, msg="Failed to delete track") from e
 
-        await bucket_manager.delete_file(key=existing_track.track_url)
-        await bucket_manager.delete_file(key=existing_track.photo_url)
+        try:
+            await bucket_manager.delete_file(key=track_audio)
+        except Exception as e:
+            logger.warning(e)
+
+        try:
+            await bucket_manager.delete_file(key=track_photo)
+        except Exception as e:
+            logger.warning(e)
 
         return "Track has been deleted succesfuly"
 

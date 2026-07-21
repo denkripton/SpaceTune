@@ -242,9 +242,7 @@ async def test_create_track_allows_upload_when_size_is_none(
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=1000),
         ),
-        patch(
-            "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
-        ),
+        patch("src.modules.music.service.bucket_manager", make_fake_bucket_manager()),
     ):
         result = await track_service.create_track(
             user_id=str(owner.id),
@@ -535,6 +533,52 @@ async def test_delete_track_removes_both_files_from_s3_and_deletes_row(
     track_repo.delete_obj.assert_awaited_once_with(id=existing_track.id)
     track_repo.session.commit.assert_awaited_once()
 
+    assert result == "Track has been deleted succesfuly"
+
+
+async def test_delete_track_succeeds_when_track_file_s3_delete_fails(
+    track_service, user_repo, track_repo
+):
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+
+    existing_track = make_fake_track(owner_id=owner.id, name="To Delete")
+    track_repo.get_one = AsyncMock(return_value=existing_track)
+    track_repo.delete_obj = AsyncMock(return_value=existing_track)
+
+    fake_bucket = make_fake_bucket_manager()
+    fake_bucket.delete_file = AsyncMock(side_effect=[Exception("S3 unavailable"), None])
+
+    with patch("src.modules.music.service.bucket_manager", fake_bucket):
+        result = await track_service.delete_track(
+            user_id=str(owner.id), track_id=existing_track.id
+        )
+
+    assert fake_bucket.delete_file.call_count == 2
+    fake_bucket.delete_file.assert_any_call(key=existing_track.photo_url)
+    track_repo.session.commit.assert_awaited_once()
+    assert result == "Track has been deleted succesfuly"
+
+
+async def test_delete_track_attempts_photo_delete_even_if_audio_delete_fails(
+    track_service, user_repo, track_repo
+):
+    owner = make_fake_user()
+    user_repo.get_by_id = AsyncMock(return_value=owner)
+
+    existing_track = make_fake_track(owner_id=owner.id, name="To Delete")
+    track_repo.get_one = AsyncMock(return_value=existing_track)
+    track_repo.delete_obj = AsyncMock(return_value=existing_track)
+
+    fake_bucket = make_fake_bucket_manager()
+    fake_bucket.delete_file = AsyncMock(side_effect=Exception("S3 down"))
+
+    with patch("src.modules.music.service.bucket_manager", fake_bucket):
+        result = await track_service.delete_track(
+            user_id=str(owner.id), track_id=existing_track.id
+        )
+
+    assert fake_bucket.delete_file.call_count == 2
     assert result == "Track has been deleted succesfuly"
 
 
