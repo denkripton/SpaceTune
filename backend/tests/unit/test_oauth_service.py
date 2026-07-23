@@ -45,7 +45,7 @@ async def test_login_raises_422_when_token_exchange_fails(oauth_service):
     mock_google_token_endpoint(status_code=400)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="expired-or-invalid-code")
+        await oauth_service.login(code="expired-or-invalid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Failed to exchange OAuth code"
@@ -57,7 +57,7 @@ async def test_login_raises_422_when_userinfo_fetch_fails(oauth_service):
     mock_google_userinfo_endpoint(status_code=401)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="some-code")
+        await oauth_service.login(code="some-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Failed to exchange OAuth code"
@@ -75,7 +75,7 @@ async def test_login_does_not_create_duplicate_when_google_id_already_linked(
     )
     user_repo.get_one = AsyncMock(return_value=existing_user)
 
-    result = await oauth_service.login(code="valid-code")
+    result = await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     user_repo.create.assert_not_called()
     user_repo.session.commit.assert_not_called()
@@ -99,7 +99,7 @@ async def test_login_links_google_id_to_existing_account_when_email_verified(
     user_repo.get_one = AsyncMock(return_value=None)
     user_repo.get_by_email = AsyncMock(return_value=existing_user)
 
-    await oauth_service.login(code="valid-code")
+    await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     user_repo.create.assert_not_called()
     assert existing_user.google_id == "new-google-sub"
@@ -120,7 +120,7 @@ async def test_login_rejects_linking_when_email_not_verified(oauth_service, user
     user_repo.get_by_email = AsyncMock(return_value=victim)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     assert victim.google_id is None
@@ -144,7 +144,7 @@ async def test_login_rejects_linking_when_email_verified_claim_is_missing(
     user_repo.get_by_email = AsyncMock(return_value=victim)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     assert victim.google_id is None
@@ -167,7 +167,7 @@ async def test_login_rejects_linking_when_email_verified_is_truthy_non_bool_stri
     user_repo.get_by_email = AsyncMock(return_value=victim)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     assert victim.google_id is None
@@ -186,7 +186,7 @@ async def test_login_rejects_creating_new_account_when_email_not_verified(
     user_repo.get_by_email = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     user_repo.create.assert_not_called()
@@ -217,7 +217,7 @@ async def test_login_raises_422_when_concurrent_request_creates_account_first(
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     user_repo.session.rollback.assert_awaited_once()
@@ -245,7 +245,7 @@ async def test_login_raises_422_when_concurrent_request_links_account_first(
     )
 
     with pytest.raises(ServiceError) as exc_info:
-        await oauth_service.login(code="valid-code")
+        await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     assert exc_info.value.status_code == 422
     user_repo.session.rollback.assert_awaited_once()
@@ -268,7 +268,7 @@ async def test_login_creates_new_user_when_no_existing_account_found(
     )
     user_repo.create = AsyncMock(return_value=created_user)
 
-    await oauth_service.login(code="valid-code")
+    await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     user_repo.create.assert_awaited_once()
     _, create_kwargs = user_repo.create.call_args
@@ -298,7 +298,7 @@ async def test_login_falls_back_to_email_prefix_when_google_name_is_missing(
     user_repo.get_by_email = AsyncMock(return_value=None)
     user_repo.create = AsyncMock(return_value=make_fake_user())
 
-    await oauth_service.login(code="valid-code")
+    await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     _, create_kwargs = user_repo.create.call_args
     assert create_kwargs["username"] == "justanemail"
@@ -318,7 +318,7 @@ async def test_login_truncates_username_to_twenty_characters(oauth_service, user
     user_repo.get_by_email = AsyncMock(return_value=None)
     user_repo.create = AsyncMock(return_value=make_fake_user())
 
-    await oauth_service.login(code="valid-code")
+    await oauth_service.login(code="valid-code", state="matching-state", expected_state="matching-state")
 
     _, create_kwargs = user_repo.create.call_args
     assert len(create_kwargs["username"]) == 20

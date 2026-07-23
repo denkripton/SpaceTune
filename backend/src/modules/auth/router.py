@@ -102,9 +102,11 @@ async def google_callback(
     response: Response,
     service: OAuthService = Depends(get_oauth_service),
 ):
-    service.verify_state(received=state, expected=request.cookies.get("oauth_state"))
-    response.delete_cookie("oauth_state")
-    user = await service.login(code=code)
+    user = await service.login(
+        code=code,
+        state=state,
+        expected_state=request.cookies.get("oauth_state"),
+    )
 
     response.set_cookie(
         key="refresh_token",

@@ -4,9 +4,9 @@ from urllib.parse import urlencode
 import httpx
 
 from src.config import settings
-from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.auth.utils import JWT
+from src.utils import UnitOfWork
 from src.utils.exceptions import ServiceError
 
 
@@ -22,7 +22,7 @@ class OAuthService:
     def generate_state(self) -> str:
         return secrets.token_urlsafe(self.STATE_BYTES)
 
-    def verify_state(self, received: str | None, expected: str | None) -> None:
+    def _verify_state(self, received: str | None, expected: str | None) -> None:
         if (
             not received
             or not expected
@@ -67,7 +67,9 @@ class OAuthService:
             raise ServiceError(code=422, msg="Failed to exchange OAuth code")
         return response.json()
 
-    async def login(self, code: str):
+    async def login(self, code: str, state: str | None, expected_state: str | None):
+        self._verify_state(received=state, expected=expected_state)
+
         tokens = await self._exchange_code(code=code)
         user_info = await self._get_userinfo(tokens["access_token"])
 
