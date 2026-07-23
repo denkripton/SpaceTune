@@ -3,6 +3,7 @@ from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCrea
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.utils import JWT, pw_manager
+from src.modules.auth.utils.enums import PasswordHash
 from src.utils import UnitOfWork
 from src.utils.exceptions import ServiceError
 
@@ -42,18 +43,19 @@ class UserService:
     async def login(self, data: UserLoginSchema):
         existing_user = await self.__repo.get_by_email(data.email)
 
-        if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
-
-        if existing_user.password is None:
-            raise ServiceError(code=422, msg="Password does not exist, set it")
-
-        password_check = pw_manager.check_password(
-            data.password, existing_user.password
+        valid_hash = (
+            existing_user.password
+            if existing_user is not None and existing_user.password is not None
+            else PasswordHash.DUMMY_PASSWORD_HASH.value
         )
+        password_check = pw_manager.check_password(data.password, valid_hash)
 
-        if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
+        if (
+            existing_user is None
+            or existing_user.password is None
+            or not password_check
+        ):
+            raise ServiceError(code=403, msg="Invalid email or password")
 
         user_id = str(existing_user.id)
         access = self.__jwt.create_access_token(user_id)

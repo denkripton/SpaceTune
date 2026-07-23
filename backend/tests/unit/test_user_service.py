@@ -2,10 +2,10 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from src.utils.exceptions import ServiceError
 from src.modules.auth.services.user import UserService
 from src.modules.auth.utils.hash_generation import pw_manager
+from src.utils.exceptions import ServiceError
+
 from tests.factories import make_fake_user
 
 
@@ -77,16 +77,6 @@ async def test_register_stores_hashed_password_not_plaintext(user_service, user_
     user_repo.session.refresh.assert_awaited_once_with(created_user)
 
 
-async def test_login_raises_422_when_user_does_not_exist(user_service, user_repo):
-    user_repo.get_by_email = AsyncMock(return_value=None)
-
-    with pytest.raises(ServiceError) as exc_info:
-        await user_service.login(make_login_schema())
-
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "User does not exist"
-
-
 async def test_login_raises_403_on_incorrect_password(user_service, user_repo):
     real_hash = pw_manager.hash_password("CorrectPass1!")
     existing_user = make_fake_user(password=real_hash)
@@ -96,7 +86,73 @@ async def test_login_raises_403_on_incorrect_password(user_service, user_repo):
         await user_service.login(make_login_schema(password="WrongPass1!"))
 
     assert exc_info.value.status_code == 403
-    assert exc_info.value.message == "Incorrect password"
+    assert exc_info.value.message == "Invalid email or password"
+
+
+async def test_login_raises_403_when_user_does_not_exist(user_service, user_repo):
+    user_repo.get_by_email = AsyncMock(return_value=None)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await user_service.login(make_login_schema())
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.message == "Invalid email or password"
+
+
+async def test_login_raises_403_for_oauth_only_account_no_password_set(
+    user_service, user_repo
+):
+    oauth_user = make_fake_user(password=None)
+    user_repo.get_by_email = AsyncMock(return_value=oauth_user)
+
+    with pytest.raises(ServiceError) as exc_info:
+        await user_service.login(make_login_schema(password="AnyPass1!"))
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.message == "Invalid email or password"
+
+
+async def test_login_error_messages_are_identical_across_failure_reasons(
+    user_service, user_repo
+):
+    messages = set()
+
+    user_repo.get_by_email = AsyncMock(return_value=None)
+    with pytest.raises(ServiceError) as exc_info:
+        await user_service.login(make_login_schema())
+    messages.add(exc_info.value.message)
+
+    oauth_user = make_fake_user(password=None)
+    user_repo.get_by_email = AsyncMock(return_value=oauth_user)
+    with pytest.raises(ServiceError) as exc_info:
+        await user_service.login(make_login_schema())
+    messages.add(exc_info.value.message)
+
+    real_hash = pw_manager.hash_password("CorrectPass1!")
+    existing_user = make_fake_user(password=real_hash)
+    user_repo.get_by_email = AsyncMock(return_value=existing_user)
+    with pytest.raises(ServiceError) as exc_info:
+        await user_service.login(make_login_schema(password="WrongPass1!"))
+    messages.add(exc_info.value.message)
+
+    assert len(messages) == 1
+
+
+async def test_login_calls_check_password_even_when_user_does_not_exist(
+    user_service, user_repo
+):
+    from unittest.mock import patch
+
+    user_repo.get_by_email = AsyncMock(return_value=None)
+
+    with patch(
+        "src.modules.auth.services.user.pw_manager.check_password",
+        return_value=False,
+    ) as mock_check:
+        with pytest.raises(ServiceError):
+            await user_service.login(make_login_schema())
+
+    mock_check.assert_called_once()
 
 
 async def test_login_returns_access_and_refresh_tokens_on_success(
