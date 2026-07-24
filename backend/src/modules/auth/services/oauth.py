@@ -71,11 +71,21 @@ class OAuthService:
         self._verify_state(received=state, expected=expected_state)
 
         tokens = await self._exchange_code(code=code)
-        user_info = await self._get_userinfo(tokens["access_token"])
 
-        sub = user_info["sub"]
-        email = user_info["email"]
+        access_token = tokens.get("access_token")
+        if not access_token:
+            raise ServiceError(code=422, msg="Failed to exchange OAuth code")
+
+        user_info = await self._get_userinfo(access_token)
+
+        sub = user_info.get("sub")
+        email = user_info.get("email")
         email_verified = user_info.get("email_verified")
+
+        if not sub or not email:
+            raise ServiceError(
+                code=422, msg="Google account is missing required profile data"
+            )
 
         username = user_info.get("name", email.split("@")[0])[:20]
 
