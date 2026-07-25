@@ -2,10 +2,6 @@ from typing import override
 
 from fastapi import FastAPI
 
-from src.utils import register_exception_handlers
-from src.utils.interfaces.application import Application
-from src.utils.middleware import OAuthStateCleanupMiddleware
-from src.modules import profile_router, music_router, user_router, grade_router
 from src import (
     contact,
     description,
@@ -15,6 +11,10 @@ from src import (
     title,
     version,
 )
+from src.modules import grade_router, music_router, profile_router, user_router
+from src.utils import register_exception_handlers
+from src.utils.interfaces.application import Application
+from src.utils.middleware import OAuthStateCleanupMiddleware
 
 
 class API(Application):
