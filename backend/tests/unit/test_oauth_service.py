@@ -41,7 +41,7 @@ def mock_google_userinfo_endpoint(
 
 
 @respx.mock
-async def test_login_raises_422_when_token_exchange_fails(oauth_service):
+async def test_login_raises_502_when_token_exchange_fails(oauth_service):
     mock_google_token_endpoint(status_code=400)
 
     with pytest.raises(ServiceError) as exc_info:
@@ -51,12 +51,12 @@ async def test_login_raises_422_when_token_exchange_fails(oauth_service):
             expected_state="matching-state",
         )
 
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "Failed to exchange OAuth code"
+    assert exc_info.value.status_code == 502
+    assert exc_info.value.message == "Failed to reach Google for OAuth token exchange"
 
 
 @respx.mock
-async def test_login_raises_422_when_userinfo_fetch_fails(oauth_service):
+async def test_login_raises_502_when_userinfo_fetch_fails(oauth_service):
     mock_google_token_endpoint()
     mock_google_userinfo_endpoint(status_code=401)
 
@@ -65,8 +65,8 @@ async def test_login_raises_422_when_userinfo_fetch_fails(oauth_service):
             code="some-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "Failed to exchange OAuth code"
+    assert exc_info.value.status_code == 502
+    assert exc_info.value.message == "Failed to reach Google for user info"
 
 
 @respx.mock

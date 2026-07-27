@@ -10,6 +10,16 @@ def test_build_problem_uses_mapped_type_and_title_for_known_status():
     assert problem["detail"] == "Track already exists"
 
 
+def test_build_problem_maps_502_to_bad_gateway():
+    problem = build_problem(
+        status_code=502, detail="Failed to reach Google for OAuth token exchange"
+    )
+
+    assert problem["type"] == "https://spacetune.dev/errors/bad-gateway"
+    assert problem["title"] == "Bad Gateway"
+    assert problem["status"] == 502
+
+
 def test_build_problem_falls_back_to_generic_type_for_unmapped_status():
     problem = build_problem(status_code=418, detail="I'm a teapot")
 

@@ -6,6 +6,7 @@ STATUS_PROBLEM_INFO: dict[int, tuple[str, str]] = {
     409: ("conflict", "Conflict"),
     422: ("unprocessable-entity", "Unprocessable Entity"),
     500: ("internal-server-error", "Internal Server Error"),
+    502: ("bad-gateway", "Bad Gateway"),
 }
 
 DEFAULT_PROBLEM_INFO: tuple[str, str] = ("error", "Error")
