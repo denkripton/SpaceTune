@@ -38,6 +38,7 @@ def user_repo(shared_session):
     repo.get_one = AsyncMock(return_value=None)
     repo.get_many = AsyncMock(return_value=[])
     repo.get_by_id = AsyncMock(return_value=None)
+    repo.get_by_id_locked = AsyncMock(return_value=None)
     repo.get_by_email = AsyncMock(return_value=None)
     repo.create = AsyncMock()
     repo.delete_obj = AsyncMock()

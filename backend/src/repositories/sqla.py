@@ -25,6 +25,11 @@ class SQLAlchemyRepository(ABCRepository):
         data = await self.session.execute(query)
         obj = data.scalars().first()
         return obj
+
+    async def get_by_id_locked(self, id: uuid.UUID):
+        query = select(self.model).where(self.model.id == id).with_for_update()
+        data = await self.session.execute(query)
+        return data.scalars().first()
     
     @override
     async def get_many(self, skip: int = 0, limit: int = None, **kwargs):

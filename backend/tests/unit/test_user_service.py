@@ -145,12 +145,14 @@ async def test_login_calls_check_password_even_when_user_does_not_exist(
 
     user_repo.get_by_email = AsyncMock(return_value=None)
 
-    with patch(
-        "src.modules.auth.services.user.pw_manager.check_password",
-        return_value=False,
-    ) as mock_check:
-        with pytest.raises(ServiceError):
-            await user_service.login(make_login_schema())
+    with (
+        patch(
+            "src.modules.auth.services.user.pw_manager.check_password",
+            return_value=False,
+        ) as mock_check,
+        pytest.raises(ServiceError),
+    ):
+        await user_service.login(make_login_schema())
 
     mock_check.assert_called_once()
 
@@ -173,7 +175,7 @@ async def test_login_returns_access_and_refresh_tokens_on_success(
 async def test_set_password_raises_422_when_user_does_not_exist(
     user_service, user_repo
 ):
-    user_repo.get_by_id = AsyncMock(return_value=None)
+    user_repo.get_by_id_locked = AsyncMock(return_value=None)
 
     schema = MagicMock()
     schema.model_dump.return_value = {
@@ -192,7 +194,7 @@ async def test_set_password_raises_409_when_password_already_set(
     user_service, user_repo
 ):
     existing_user = make_fake_user(password=b"already-set-hash")
-    user_repo.get_by_id = AsyncMock(return_value=existing_user)
+    user_repo.get_by_id_locked = AsyncMock(return_value=existing_user)
 
     schema = MagicMock()
     schema.model_dump.return_value = {
@@ -211,7 +213,7 @@ async def test_set_password_succeeds_for_oauth_user_without_password(
     user_service, user_repo
 ):
     oauth_user = make_fake_user(password=None)
-    user_repo.get_by_id = AsyncMock(return_value=oauth_user)
+    user_repo.get_by_id_locked = AsyncMock(return_value=oauth_user)
 
     schema = MagicMock()
     schema.model_dump.return_value = {
@@ -222,7 +224,7 @@ async def test_set_password_succeeds_for_oauth_user_without_password(
     result = await user_service.set_password(user_id=oauth_user.id, data=schema)
 
     assert result == "Password added successfully"
-    assert oauth_user.password != "BrandNew1!".encode()
+    assert oauth_user.password != b"BrandNew1!"
     assert pw_manager.check_password("BrandNew1!", oauth_user.password) is True
     user_repo.session.commit.assert_awaited_once()
 
@@ -231,7 +233,7 @@ async def test_change_password_raises_400_when_password_not_set(
     user_service, user_repo
 ):
     oauth_user = make_fake_user(password=None)
-    user_repo.get_by_id = AsyncMock(return_value=oauth_user)
+    user_repo.get_by_id_locked = AsyncMock(return_value=oauth_user)
 
     schema = MagicMock()
     schema.model_dump.return_value = {
@@ -252,7 +254,7 @@ async def test_change_password_raises_403_on_wrong_current_password(
 ):
     real_hash = pw_manager.hash_password("CurrentPass1!")
     existing_user = make_fake_user(password=real_hash)
-    user_repo.get_by_id = AsyncMock(return_value=existing_user)
+    user_repo.get_by_id_locked = AsyncMock(return_value=existing_user)
 
     schema = MagicMock()
     schema.model_dump.return_value = {
@@ -268,10 +270,48 @@ async def test_change_password_raises_403_on_wrong_current_password(
     assert exc_info.value.message == "Incorrect password"
 
 
+async def test_set_password_uses_locked_read_not_plain_get_by_id(
+    user_service, user_repo
+):
+    oauth_user = make_fake_user(password=None)
+    user_repo.get_by_id_locked = AsyncMock(return_value=oauth_user)
+
+    schema = MagicMock()
+    schema.model_dump.return_value = {
+        "password": "BrandNew1!",
+        "confirm_password": "BrandNew1!",
+    }
+
+    await user_service.set_password(user_id=oauth_user.id, data=schema)
+
+    user_repo.get_by_id_locked.assert_awaited_once_with(id=oauth_user.id)
+    user_repo.get_by_id.assert_not_awaited()
+
+
+async def test_change_password_uses_locked_read_not_plain_get_by_id(
+    user_service, user_repo
+):
+    old_hash = pw_manager.hash_password("CurrentPass1!")
+    existing_user = make_fake_user(password=old_hash)
+    user_repo.get_by_id_locked = AsyncMock(return_value=existing_user)
+
+    schema = MagicMock()
+    schema.model_dump.return_value = {
+        "password": "CurrentPass1!",
+        "new_password": "BrandNewPass1!",
+        "confirm_password": "BrandNewPass1!",
+    }
+
+    await user_service.change_password(user_id=existing_user.id, data=schema)
+
+    user_repo.get_by_id_locked.assert_awaited_once_with(id=existing_user.id)
+    user_repo.get_by_id.assert_not_awaited()
+
+
 async def test_change_password_updates_hash_on_success(user_service, user_repo):
     old_hash = pw_manager.hash_password("CurrentPass1!")
     existing_user = make_fake_user(password=old_hash)
-    user_repo.get_by_id = AsyncMock(return_value=existing_user)
+    user_repo.get_by_id_locked = AsyncMock(return_value=existing_user)
 
     schema = MagicMock()
     schema.model_dump.return_value = {

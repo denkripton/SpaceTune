@@ -67,7 +67,7 @@ class UserService:
         }
 
     async def set_password(self, user_id, data: PasswordCreateSchema):
-        existing_user = await self.__repo.get_by_id(id=user_id)
+        existing_user = await self.__repo.get_by_id_locked(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -85,7 +85,7 @@ class UserService:
         return "Password added successfully"
 
     async def change_password(self, user_id, data: PasswordChangeSchema):
-        existing_user = await self.__repo.get_by_id(id=user_id)
+        existing_user = await self.__repo.get_by_id_locked(id=user_id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
