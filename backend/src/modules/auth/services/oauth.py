@@ -54,7 +54,9 @@ class OAuthService:
                 },
             )
         if response.status_code != 200:
-            raise ServiceError(code=422, msg="Failed to exchange OAuth code")
+            raise ServiceError(
+                code=502, msg="Failed to reach Google for OAuth token exchange"
+            )
         return response.json()
 
     async def _get_userinfo(self, access_token: str):
@@ -64,7 +66,7 @@ class OAuthService:
                 headers={"Authorization": f"Bearer {access_token}"},
             )
         if response.status_code != 200:
-            raise ServiceError(code=422, msg="Failed to exchange OAuth code")
+            raise ServiceError(code=502, msg="Failed to reach Google for user info")
         return response.json()
 
     async def login(self, code: str, state: str | None, expected_state: str | None):
