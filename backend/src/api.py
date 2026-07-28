@@ -1,0 +1,50 @@
+from typing import override
+
+from fastapi import FastAPI
+
+from src import (
+    contact,
+    description,
+    openapi_url,
+    summary,
+    tags_metadata,
+    title,
+    version,
+)
+from src.modules import grade_router, music_router, profile_router, user_router
+from src.utils import register_exception_handlers
+from src.utils.interfaces.application import Application
+from src.utils.middleware import OAuthStateCleanupMiddleware
+
+
+class API(Application):
+    def __init__(self):
+        super().__init__()
+        self.title = title
+        self.summary = summary
+        self.description = description
+        self.version = version
+        self.openapi_url = openapi_url
+        self.tags_metadata = tags_metadata
+        self.contact = contact
+        self.routers = [user_router, music_router, profile_router, grade_router]
+
+    @override
+    def create(self):
+        self.app = FastAPI(
+            title=self.title,
+            openapi_tags=self.tags_metadata,
+            summary=self.summary,
+            description=self.description,
+            version=self.version,
+            openapi_url=self.openapi_url,
+            contact=self.contact,
+        )
+        for router in self.routers:
+            self.app.include_router(router=router)
+        register_exception_handlers(self.app)
+        self.app.add_middleware(OAuthStateCleanupMiddleware)
+
+
+api = API()
+api.create()

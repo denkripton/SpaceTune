@@ -1,0 +1,193 @@
+from typing import Union
+
+from fastapi import APIRouter, Depends, File, UploadFile
+
+from src.modules.auth.dependencies import get_current_user
+from src.modules.auth.schemas.exceptions.user_401 import User401
+from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.user.read import UserRead
+from src.modules.profile.dependencies import get_profile_service
+from src.modules.profile.schemas import (
+    ProfileCreationSchema,
+    ProfilePrivateReadSchema,
+    ProfilePublicReadSchema,
+    ProfileUpdateSchema,
+    ProfileVisibilityUpdateSchema,
+)
+from src.modules.profile.schemas.exceptions.profile_422 import Profile422
+from src.modules.profile.service import ProfileService
+from src.utils.routing.error_handling import ErrorHandlingRoute
+
+profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
+
+
+@profile_router.post(
+    "/me/create",
+    summary="Profile creation (Protected)",
+    tags=["Profile CRUD's"],
+    description="Create your profile",
+    response_model=ProfileCreationSchema,
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def create_my_profile(
+    data: ProfileCreationSchema,
+    service: ProfileService = Depends(get_profile_service),
+    user_id: str = Depends(get_current_user),
+):
+    return await service.create_profile(user_id=user_id, data=data)
+
+
+@profile_router.patch(
+    "/me/update",
+    summary="Update username (Protected)",
+    tags=["Profile CRUD's"],
+    description="Change your username",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": User422},
+    },
+)
+async def update_username(
+    new_username: str,
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.update_username(user_id=user_id, new_username=new_username)
+
+
+@profile_router.patch(
+    "/me/profile",
+    summary="Update profile details (Protected)",
+    tags=["Profile CRUD's"],
+    description=(
+        "Partially update your profile's bio, country, phone_number, or birth_date"
+    ),
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def update_profile_details(
+    data: ProfileUpdateSchema,
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.update_profile(user_id=user_id, data=data)
+
+
+@profile_router.put(
+    "/me/visibility",
+    summary="Update profile field visibility (Protected)",
+    tags=["Profile CRUD's"],
+    description=(
+        "Control which of your profile fields are visible to other users viewing "
+    ),
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def update_visibility(
+    data: ProfileVisibilityUpdateSchema,
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.update_visibility(user_id=user_id, data=data)
+
+
+@profile_router.post(
+    "/me/photo",
+    summary="Upload profile photo (Protected)",
+    tags=["Profile CRUD's"],
+    description="Upload or replace your profile photo",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def upload_my_photo(
+    photo_file: UploadFile = File(),
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.upload_photo(user_id=user_id, photo_file=photo_file)
+
+
+@profile_router.get(
+    "/me",
+    summary="Read your profile (Protected)",
+    tags=["Profile CRUD's"],
+    description="Get your profile",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": User422},
+    },
+)
+async def get_my_profile(
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.get_my_profile(user_id=user_id)
+
+
+@profile_router.get(
+    "/{user_id}",
+    summary="Read user profile",
+    tags=["Profile CRUD's"],
+    description=(
+        "Get another user's public profile. Only fields the profile "
+        "owner has opted to make visible are returned — everything else "
+        "comes back as null."
+    ),
+    response_model=ProfilePublicReadSchema,
+    responses={
+        422: {"model": User422},
+    },
+)
+async def get_user_profile(
+    user_id: str, service: ProfileService = Depends(get_profile_service)
+):
+    return await service.get_user_profile(user_id=user_id)
+
+
+@profile_router.delete(
+    "/me/photo",
+    summary="Remove profile photo (Protected)",
+    tags=["Profile CRUD's"],
+    description="Remove your profile photo, independent of deleting the whole profile",
+    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def delete_my_photo(
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.delete_photo(user_id=user_id)
+
+
+@profile_router.delete(
+    "/me/delete",
+    summary="Delete profile (Protected)",
+    tags=["Profile CRUD's"],
+    description="Delete your profile",
+    responses={
+        401: {"model": User401},
+        422: {"model": Union[Profile422, User422]},
+    },
+)
+async def delete_my_profile(
+    user_id: str = Depends(get_current_user),
+    service: ProfileService = Depends(get_profile_service),
+):
+    return await service.delete_profile(user_id=user_id)

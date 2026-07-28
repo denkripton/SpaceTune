@@ -1,0 +1,85 @@
+from typing import Optional
+
+from fastapi import Depends, HTTPException, Request, Response
+
+from src.dependencies import RepoFactory, get_unit_of_work
+from src.modules.auth.repository import UserRepository
+from src.modules.auth.services import OAuthService, UserService
+from src.modules.auth.utils import JWT
+from src.utils import UnitOfWork
+
+user_repository = RepoFactory(repo=UserRepository)
+
+
+def get_jwt_service() -> JWT:
+    return JWT()
+
+
+class UserServiceFactory:
+    def __init__(self, service_cls: type[UserService] = UserService):
+        self.service_cls = service_cls
+
+    def create(
+        self,
+        user_repo: UserRepository,
+        jwt: JWT,
+        uow: UnitOfWork,
+    ) -> UserService:
+        return self.service_cls(repo=user_repo, jwt=jwt, uow=uow)
+
+
+class OAuthServiceFactory:
+    def __init__(self, service_cls: type[OAuthService] = OAuthService):
+        self.service_cls = service_cls
+
+    def create(
+        self,
+        user_repo: UserRepository,
+        jwt: JWT,
+        uow: UnitOfWork,
+    ) -> OAuthService:
+        return self.service_cls(repo=user_repo, jwt=jwt, uow=uow)
+
+
+user_service_factory = UserServiceFactory()
+oauth_service_factory = OAuthServiceFactory()
+
+
+def get_user_service(
+    user_repo: UserRepository = Depends(user_repository),
+    jwt: JWT = Depends(get_jwt_service),
+    uow: UnitOfWork = Depends(get_unit_of_work),
+) -> UserService:
+    return user_service_factory.create(user_repo=user_repo, jwt=jwt, uow=uow)
+
+
+def get_oauth_service(
+    user_repo: UserRepository = Depends(user_repository),
+    jwt: JWT = Depends(get_jwt_service),
+    uow: UnitOfWork = Depends(get_unit_of_work),
+) -> OAuthService:
+    return oauth_service_factory.create(user_repo=user_repo, jwt=jwt, uow=uow)
+
+
+async def get_current_user(
+    request: Request, response: Response, jwt: JWT = Depends(get_jwt_service)
+):
+    auth_header: Optional[str] = request.headers.get("Authorization")
+    token = auth_header.replace("Bearer ", "") if auth_header else None
+
+    payload = jwt.validate_token(token)
+
+    if payload:
+        return payload["sub"]
+
+    get_refresh_token = request.cookies.get("refresh_token")
+    refresh_token = jwt.validate_token(get_refresh_token)
+
+    if refresh_token is None:
+        raise HTTPException(status_code=401, detail="User not authorized")
+
+    new_access_token = jwt.create_access_token(refresh_token["sub"])
+
+    response.headers["X-New-Access-Token"] = new_access_token
+
+    return refresh_token["sub"]
