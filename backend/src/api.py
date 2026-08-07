@@ -14,6 +14,7 @@ from src import (
 from src.modules import grade_router, music_router, profile_router, user_router
 from src.utils import register_exception_handlers
 from src.utils.interfaces.application import Application
+from src.utils.logging import configure_logging
 from src.utils.middleware import OAuthStateCleanupMiddleware
 
 
@@ -31,6 +32,8 @@ class API(Application):
 
     @override
     def create(self):
+        configure_logging()
+
         self.app = FastAPI(
             title=self.title,
             openapi_tags=self.tags_metadata,
@@ -40,6 +43,7 @@ class API(Application):
             openapi_url=self.openapi_url,
             contact=self.contact,
         )
+
         for router in self.routers:
             self.app.include_router(router=router)
         register_exception_handlers(self.app)

@@ -26,6 +26,7 @@ class LoggingConfigurator:
         shared_processors = self._build_shared_processors()
         handler = self._build_handler(shared_processors)
         self._install_root_handler(handler)
+        self._route_server_loggers_to_root()
         self._quiet_third_party_loggers()
         self._configure_structlog(shared_processors)
 
@@ -57,6 +58,13 @@ class LoggingConfigurator:
         root_logger.handlers.clear()
         root_logger.addHandler(handler)
         root_logger.setLevel(self._level)
+
+    def _route_server_loggers_to_root(self) -> None:
+        for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+            logger = logging.getLogger(logger_name)
+            logger.handlers.clear()
+            logger.propagate = True
+            logger.setLevel(self._level)
 
     def _quiet_third_party_loggers(self) -> None:
         for logger_name in self._quieted_loggers:
