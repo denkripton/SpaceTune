@@ -15,7 +15,7 @@ from src.modules import grade_router, music_router, profile_router, user_router
 from src.utils import register_exception_handlers
 from src.utils.interfaces.application import Application
 from src.utils.logging import configure_logging
-from src.utils.middleware import OAuthStateCleanupMiddleware
+from src.utils.middleware import OAuthStateCleanupMiddleware, RequestContextMiddleware
 
 
 class API(Application):
@@ -48,6 +48,7 @@ class API(Application):
             self.app.include_router(router=router)
         register_exception_handlers(self.app)
         self.app.add_middleware(OAuthStateCleanupMiddleware)
+        self.app.add_middleware(RequestContextMiddleware)
 
 
 api = API()
