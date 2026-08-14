@@ -5,7 +5,7 @@ from src.utils.schemas import BaseSchema
 
 class HealthReadSchema(BaseSchema):
     status: Literal["healthy", "unhealthy"]
-    database: Literal["connected", "disconnected"]
+    database: Literal["reachable", "unreachable"]
 
     @property
     def http_status_code(self) -> int:

@@ -11,7 +11,13 @@ from src import (
     title,
     version,
 )
-from src.modules import grade_router, music_router, profile_router, user_router
+from src.modules import (
+    grade_router,
+    health_router,
+    music_router,
+    profile_router,
+    user_router,
+)
 from src.utils import register_exception_handlers
 from src.utils.interfaces.application import Application
 from src.utils.logging import configure_logging
@@ -28,7 +34,13 @@ class API(Application):
         self.openapi_url = openapi_url
         self.tags_metadata = tags_metadata
         self.contact = contact
-        self.routers = [user_router, music_router, profile_router, grade_router]
+        self.routers = [
+            health_router,
+            user_router,
+            music_router,
+            profile_router,
+            grade_router,
+        ]
 
     @override
     def create(self):

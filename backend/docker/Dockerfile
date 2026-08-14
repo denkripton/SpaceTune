@@ -51,5 +51,8 @@ USER appuser
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "from urllib.request import urlopen; raise SystemExit(0 if urlopen('http://127.0.0.1:8000/health', timeout=2).status == 200 else 1)"
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "src.main:api.app", "--host", "0.0.0.0", "--port", "8000"]
