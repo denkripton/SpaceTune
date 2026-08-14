@@ -11,10 +11,17 @@ from src import (
     title,
     version,
 )
-from src.modules import grade_router, music_router, profile_router, user_router
+from src.modules import (
+    grade_router,
+    health_router,
+    music_router,
+    profile_router,
+    user_router,
+)
 from src.utils import register_exception_handlers
 from src.utils.interfaces.application import Application
-from src.utils.middleware import OAuthStateCleanupMiddleware
+from src.utils.logging import configure_logging
+from src.utils.middleware import OAuthStateCleanupMiddleware, RequestContextMiddleware
 
 
 class API(Application):
@@ -27,10 +34,18 @@ class API(Application):
         self.openapi_url = openapi_url
         self.tags_metadata = tags_metadata
         self.contact = contact
-        self.routers = [user_router, music_router, profile_router, grade_router]
+        self.routers = [
+            health_router,
+            user_router,
+            music_router,
+            profile_router,
+            grade_router,
+        ]
 
     @override
     def create(self):
+        configure_logging()
+
         self.app = FastAPI(
             title=self.title,
             openapi_tags=self.tags_metadata,
@@ -40,10 +55,12 @@ class API(Application):
             openapi_url=self.openapi_url,
             contact=self.contact,
         )
+
         for router in self.routers:
             self.app.include_router(router=router)
         register_exception_handlers(self.app)
         self.app.add_middleware(OAuthStateCleanupMiddleware)
+        self.app.add_middleware(RequestContextMiddleware)
 
 
 api = API()

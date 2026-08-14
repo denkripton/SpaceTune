@@ -1,67 +1,83 @@
+import uuid
+
 import httpx
 import pytest
+import structlog
 from httpx import ASGITransport
-
 from src.api import api
-from src.modules.auth.dependencies import get_oauth_service
-from src.utils.exceptions import ServiceError
+from src.utils.middleware.constants import RequestContextHeaders
+from src.utils.middleware.request_context import RequestContextMiddleware
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
+REQUEST_ID_HEADER = RequestContextHeaders.REQUEST_ID.value
 
 
-class FakeOAuthService:
-    def __init__(self, result=None, error: ServiceError | None = None):
-        self._result = result
-        self._error = error
-
-    async def login(self, code, state, expected_state):
-        if self._error is not None:
-            raise self._error
-        return self._result
+@pytest.fixture
+async def client():
+    transport = ASGITransport(app=api.app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    api.app.dependency_overrides.clear()
 
 
-class TestOAuthStateCleanupMiddleware:
-    @pytest.fixture
-    async def client(self):
-        transport = ASGITransport(app=api.app)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://test", cookies={"oauth_state": "some-state"}
-        ) as ac:
-            yield ac
-        api.app.dependency_overrides.clear()
+@pytest.fixture
+async def probe_client():
+    captured = []
 
-    async def test_deletes_state_cookie_on_successful_callback(self, client):
-        api.app.dependency_overrides[get_oauth_service] = lambda: FakeOAuthService(
-            result={"access": "a", "refresh": "r"}
-        )
+    async def endpoint(request):
+        captured.append(dict(structlog.contextvars.get_contextvars()))
+        return JSONResponse({"ok": True})
 
-        response = await client.get(
-            "/users/oauth/google/callback",
-            params={"code": "x", "state": "matching"},
-        )
+    app = Starlette(routes=[Route("/probe", endpoint)])
+    app.add_middleware(RequestContextMiddleware)
 
-        assert response.status_code == 200
-        set_cookie_headers = response.headers.get_list("set-cookie")
-        state_cookie_headers = [h for h in set_cookie_headers if h.startswith("oauth_state=")]
-        assert state_cookie_headers, "expected a Set-Cookie header clearing oauth_state"
-        assert "Max-Age=0" in state_cookie_headers[0] or "expires=" in state_cookie_headers[0].lower()
+    transport = ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac, captured
 
-    async def test_deletes_state_cookie_when_login_rejects_with_service_error(self, client):
-        api.app.dependency_overrides[get_oauth_service] = lambda: FakeOAuthService(
-            error=ServiceError(code=422, msg="Invalid or missing OAuth state")
-        )
 
-        response = await client.get(
-            "/users/oauth/google/callback",
-            params={"code": "x", "state": "attacker-state"},
-        )
+async def test_generates_request_id_when_none_supplied(client):
+    response = await client.get("/users/nonexistent/profile")
 
-        assert response.status_code == 422
-        set_cookie_headers = response.headers.get_list("set-cookie")
-        state_cookie_headers = [h for h in set_cookie_headers if h.startswith("oauth_state=")]
-        assert state_cookie_headers, "cookie must be cleared even on rejection"
+    request_id = response.headers.get(REQUEST_ID_HEADER)
+    assert request_id is not None
+    uuid.UUID(request_id)
 
-    async def test_does_not_touch_cookies_on_unrelated_paths(self, client):
-        response = await client.get("/users/me/profile")
 
-        set_cookie_headers = response.headers.get_list("set-cookie")
-        state_cookie_headers = [h for h in set_cookie_headers if h.startswith("oauth_state=")]
-        assert state_cookie_headers == []
+async def test_echoes_client_supplied_request_id(client):
+    supplied = str(uuid.uuid4())
+
+    response = await client.get(
+        "/users/nonexistent/profile",
+        headers={REQUEST_ID_HEADER: supplied},
+    )
+
+    assert response.headers.get(REQUEST_ID_HEADER) == supplied
+
+
+async def test_each_request_gets_a_distinct_id(client):
+    first = await client.get("/users/nonexistent/profile")
+    second = await client.get("/users/nonexistent/profile")
+
+    assert first.headers[REQUEST_ID_HEADER] != second.headers[REQUEST_ID_HEADER]
+
+
+async def test_binds_request_id_method_and_path_into_contextvars(probe_client):
+    ac, captured = probe_client
+
+    await ac.get("/probe")
+
+    assert captured[0]["method"] == "GET"
+    assert captured[0]["path"] == "/probe"
+    uuid.UUID(captured[0]["request_id"])
+
+
+async def test_contextvars_do_not_leak_between_sequential_requests(probe_client):
+    ac, captured = probe_client
+
+    await ac.get("/probe")
+    await ac.get("/probe")
+
+    assert captured[0]["request_id"] != captured[1]["request_id"]

@@ -56,18 +56,6 @@ class TrackService:
         if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
             raise ServiceError(code=422, msg="Invalid image file type")
 
-        if (
-            music_file.size is not None
-            and music_file.size > FileSizeLimit.MAX_AUDIO_SIZE.value
-        ):
-            raise ServiceError(code=422, msg="Audio file is too big")
-
-        if (
-            image_file.size is not None
-            and image_file.size > FileSizeLimit.MAX_IMAGE_SIZE.value
-        ):
-            raise ServiceError(code=422, msg="Image file is too big")
-
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
         result_artists = [existing_user.username]
@@ -79,15 +67,26 @@ class TrackService:
         data["owner_id"] = user_id
         data["duration"] = await count_duration(file=music_file)
 
+        limited_music_stream = SizeLimitedStream(
+            music_file.file, max_bytes=FileSizeLimit.MAX_AUDIO_SIZE.value
+        )
+
         try:
             await bucket_manager.upload_file(
-                file=music_file.file,
+                file=limited_music_stream,
                 file_type=music_file.content_type,
                 key=track_aws_key,
             )
-            limited_image_stream = SizeLimitedStream(
-                image_file.file, max_bytes=FileSizeLimit.MAX_IMAGE_SIZE.value
-            )
+        except FileSizeLimitExceeded as e:
+            raise ServiceError(code=422, msg="Audio file is too big") from e
+        except Exception as e:
+            raise ServiceError(code=500, msg="Failed to upload media") from e
+
+        limited_image_stream = SizeLimitedStream(
+            image_file.file, max_bytes=FileSizeLimit.MAX_IMAGE_SIZE.value
+        )
+
+        try:
             await bucket_manager.upload_file(
                 file=limited_image_stream,
                 file_type=image_file.content_type,

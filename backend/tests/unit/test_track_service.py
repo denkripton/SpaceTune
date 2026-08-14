@@ -153,7 +153,7 @@ async def test_create_track_raises_422_on_invalid_image_content_type(
     assert fake_bucket.upload_file.call_count == 0
 
 
-async def test_create_track_raises_422_when_audio_exceeds_size_limit(
+async def test_create_track_raises_422_when_audio_stream_exceeds_size_limit(
     track_service, user_repo, track_repo
 ):
 
@@ -164,14 +164,24 @@ async def test_create_track_raises_422_when_audio_exceeds_size_limit(
     creation_data = MagicMock()
     creation_data.model_dump.return_value = {"name": "Too Big", "artists": []}
 
-    oversized_music_file = make_upload_file(size=FileSizeLimit.MAX_AUDIO_SIZE.value + 1)
+    oversized_music_file = make_upload_file()
+    oversized_music_file.file = io.BytesIO(
+        b"x" * (FileSizeLimit.MAX_AUDIO_SIZE.value + 1)
+    )
+
+    async def drain_stream(file, file_type, key):
+        while file.read(8192):
+            pass
+
+    fake_bucket = make_fake_bucket_manager()
+    fake_bucket.upload_file = AsyncMock(side_effect=drain_stream)
 
     with (
         patch(
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=180_000),
         ),
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch("src.modules.music.service.bucket_manager", fake_bucket),
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
@@ -183,10 +193,9 @@ async def test_create_track_raises_422_when_audio_exceeds_size_limit(
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Audio file is too big"
-    fake_bucket.upload_file.assert_not_called()
 
 
-async def test_create_track_raises_422_when_image_exceeds_size_limit(
+async def test_create_track_raises_422_when_image_stream_exceeds_size_limit(
     track_service, user_repo, track_repo
 ):
 
@@ -197,31 +206,40 @@ async def test_create_track_raises_422_when_image_exceeds_size_limit(
     creation_data = MagicMock()
     creation_data.model_dump.return_value = {"name": "Too Big Image", "artists": []}
 
-    oversized_image_file = make_upload_file(
-        content_type="image/png", size=FileSizeLimit.MAX_AUDIO_SIZE.value + 1
+    oversized_image_file = make_upload_file(content_type="image/png")
+    oversized_image_file.file = io.BytesIO(
+        b"x" * (FileSizeLimit.MAX_IMAGE_SIZE.value + 1)
     )
+    music_file = make_upload_file()
+    music_file.file = io.BytesIO(b"audio-bytes")
+
+    async def drain_stream(file, file_type, key):
+        while file.read(8192):
+            pass
+
+    fake_bucket = make_fake_bucket_manager()
+    fake_bucket.upload_file = AsyncMock(side_effect=drain_stream)
 
     with (
         patch(
             "src.modules.music.service.count_duration",
             new=AsyncMock(return_value=180_000),
         ),
-        patch("src.modules.music.service.bucket_manager") as fake_bucket,
+        patch("src.modules.music.service.bucket_manager", fake_bucket),
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
                 user_id=str(owner.id),
                 data=creation_data,
-                music_file=make_upload_file(),
+                music_file=music_file,
                 image_file=oversized_image_file,
             )
 
     assert exc_info.value.status_code == 422
     assert exc_info.value.message == "Image file is too big"
-    fake_bucket.upload_file.assert_not_called()
 
 
-async def test_create_track_allows_upload_when_size_is_none(
+async def test_create_track_allows_upload_without_declared_size(
     track_service, user_repo, track_repo
 ):
     owner = make_fake_user()
@@ -254,7 +272,7 @@ async def test_create_track_allows_upload_when_size_is_none(
     assert result.id == created_track.id
 
 
-async def test_create_track_raises_422_when_image_size_none_but_stream_exceeds_limit(
+async def test_create_track_raises_422_when_image_stream_exceeds_limit_without_declared_size(
     track_service, user_repo, track_repo
 ):
     owner = make_fake_user()
@@ -298,7 +316,7 @@ async def test_create_track_raises_422_when_image_size_none_but_stream_exceeds_l
     fake_bucket.delete_file.assert_called_once()
 
 
-async def test_create_track_validates_type_and_size_before_count_duration(
+async def test_create_track_validates_content_type_before_count_duration(
     track_service, user_repo, track_repo
 ):
     owner = make_fake_user()

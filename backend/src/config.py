@@ -1,8 +1,6 @@
 import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-logging.basicConfig(level=logging.INFO)
-
 
 class Settings(BaseSettings):
     DB_URL: str
