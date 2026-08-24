@@ -1,8 +1,8 @@
-from src.utils import UnitOfWork
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.config import logger
 from src.modules.music.repository import TrackRepository
+from src.utils import UnitOfWork
 from src.utils.exceptions import ServiceError
 
 
@@ -19,8 +19,8 @@ class GradeService:
         self.__grade_repo = grade_repo
         self.__uow = uow
 
-    async def grade_track(self, user_id, track_id, user_grade: int):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def grade_track(self, user, track_id, user_grade: int):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -31,7 +31,7 @@ class GradeService:
             raise ServiceError(code=422, msg="Track does not exist")
 
         existing_grade = await self.__grade_repo.get_one(
-            user_id=user_id, track_id=existing_track.id
+            user_id=user.id, track_id=existing_track.id
         )
 
         if existing_grade is not None:
@@ -46,7 +46,7 @@ class GradeService:
 
         data = {
             "grade": user_grade,
-            "user_id": user_id,
+            "user_id": user.id,
             "track_id": existing_track.id,
         }
 

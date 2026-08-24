@@ -31,20 +31,19 @@ class TrackService:
         self.__uow = uow
 
     async def create_track(
-        self, user_id: str, data: TrackCreationSchema, music_file, image_file
+        self, user, data: TrackCreationSchema, music_file, image_file
     ):
-        user_id = uuid.UUID(user_id)
         data = data.model_dump()
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
-        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
+        track_aws_key = f"track/{user.id}/{uuid.uuid4()}"
+        image_aws_key = f"image/{user.id}/{uuid.uuid4()}"
 
         existing_track = await self.__track_repo.get_one(
-            owner_id=user_id, name=data["name"]
+            owner_id=user.id, name=data["name"]
         )
 
         if existing_track is not None:
@@ -64,7 +63,7 @@ class TrackService:
             result_artists.append(artist)
         data["artists"] = result_artists
 
-        data["owner_id"] = user_id
+        data["owner_id"] = user.id
         data["duration"] = await count_duration(file=music_file)
 
         limited_music_stream = SizeLimitedStream(
@@ -124,13 +123,13 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user_id, track_id):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def delete_track(self, user, track_id):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        existing_track = await self.__track_repo.get_one(id=track_id, owner_id=user_id)
+        existing_track = await self.__track_repo.get_one(id=track_id, owner_id=user.id)
         if existing_track is None:
             raise ServiceError(code=422, msg="Track does not exist")
 
@@ -185,9 +184,9 @@ class TrackService:
 
         return {"metadata": metadata, "media": media}
 
-    async def get_my_tracks(self, user_id):
+    async def get_my_tracks(self, user):
 
-        tracks = await self.__track_repo.get_many(owner_id=user_id)
+        tracks = await self.__track_repo.get_many(owner_id=user.id)
         track_ids = [track.id for track in tracks]
 
         aggregates = await self.__grade_repo.get_aggregates_by_track_ids(track_ids)

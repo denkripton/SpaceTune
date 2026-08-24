@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 
-from src.modules.auth import get_current_user, get_oauth_service, get_user_service
+from src.modules.auth import get_oauth_service, get_user_service
+from src.modules.auth.dependencies import get_current_user_obj
+from src.modules.auth.models import User
 from src.modules.auth.schemas.auth.read import AuthReadSchema
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_401 import User401
@@ -148,10 +150,10 @@ async def logout_user(response: Response):
 )
 async def add_password(
     data: PasswordCreateSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: UserService = Depends(get_user_service),
 ):
-    return await service.set_password(user_id=user_id, data=data)
+    return await service.set_password(user=user, data=data)
 
 
 @user_router.put(
@@ -166,7 +168,7 @@ async def add_password(
 )
 async def change_password(
     data: PasswordChangeSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: UserService = Depends(get_user_service),
 ):
-    return await service.change_password(user_id=user_id, data=data)
+    return await service.change_password(user=user, data=data)

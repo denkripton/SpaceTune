@@ -2,7 +2,8 @@ from typing import Union
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from src.modules.auth.dependencies import get_current_user
+from src.modules.auth.dependencies import get_current_user_obj
+from src.modules.auth.models import User
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
 from src.modules.auth.schemas.user.read import UserRead
@@ -35,9 +36,9 @@ profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
 async def create_my_profile(
     data: ProfileCreationSchema,
     service: ProfileService = Depends(get_profile_service),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
 ):
-    return await service.create_profile(user_id=user_id, data=data)
+    return await service.create_profile(user=user, data=data)
 
 
 @profile_router.patch(
@@ -53,10 +54,10 @@ async def create_my_profile(
 )
 async def update_username(
     new_username: str,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_username(user_id=user_id, new_username=new_username)
+    return await service.update_username(user=user, new_username=new_username)
 
 
 @profile_router.patch(
@@ -74,10 +75,10 @@ async def update_username(
 )
 async def update_profile_details(
     data: ProfileUpdateSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_profile(user_id=user_id, data=data)
+    return await service.update_profile(user=user, data=data)
 
 
 @profile_router.put(
@@ -95,10 +96,10 @@ async def update_profile_details(
 )
 async def update_visibility(
     data: ProfileVisibilityUpdateSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_visibility(user_id=user_id, data=data)
+    return await service.update_visibility(user=user, data=data)
 
 
 @profile_router.post(
@@ -114,10 +115,10 @@ async def update_visibility(
 )
 async def upload_my_photo(
     photo_file: UploadFile = File(),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.upload_photo(user_id=user_id, photo_file=photo_file)
+    return await service.upload_photo(user=user, photo_file=photo_file)
 
 
 @profile_router.get(
@@ -132,10 +133,10 @@ async def upload_my_photo(
     },
 )
 async def get_my_profile(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.get_my_profile(user_id=user_id)
+    return await service.get_my_profile(user=user)
 
 
 @profile_router.get(
@@ -170,10 +171,10 @@ async def get_user_profile(
     },
 )
 async def delete_my_photo(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.delete_photo(user_id=user_id)
+    return await service.delete_photo(user=user)
 
 
 @profile_router.delete(
@@ -187,7 +188,7 @@ async def delete_my_photo(
     },
 )
 async def delete_my_profile(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.delete_profile(user_id=user_id)
+    return await service.delete_profile(user=user)

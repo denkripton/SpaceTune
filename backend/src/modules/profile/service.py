@@ -24,31 +24,29 @@ class ProfileService:
         self.__user_repo = repo
         self.__uow = uow
 
-    async def create_profile(self, user_id: str, data: ProfileCreationSchema):
+    async def create_profile(self, user, data: ProfileCreationSchema):
 
         data = data.model_dump()
 
-        user_id = uuid.UUID(user_id)
-
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
 
-        existing_profile = await self.__profile_repo.get_user_by_id(user_id)
+        existing_profile = await self.__profile_repo.get_user_by_id(user.id)
 
         if existing_profile is not None:
             raise ServiceError(code=422, msg="Profile already created")
 
-        data["user_id"] = user_id
+        data["user_id"] = user.id
         profile = await self.__profile_repo.create(**data)
 
         await self.__uow.commit(conflict_msg="Profile already created")
         await self.__uow.refresh(profile)
         return profile
 
-    async def get_my_profile(self, user_id):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def get_my_profile(self, user):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -67,8 +65,8 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def delete_profile(self, user_id):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def delete_profile(self, user):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -83,8 +81,8 @@ class ProfileService:
 
         return "Profile has been deleted succesfuly"
 
-    async def update_username(self, user_id, new_username):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def update_username(self, user, new_username):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -102,8 +100,8 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def update_profile(self, user_id, data: ProfileUpdateSchema):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def update_profile(self, user, data: ProfileUpdateSchema):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -122,8 +120,8 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def update_visibility(self, user_id, data: ProfileVisibilityUpdateSchema):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def update_visibility(self, user, data: ProfileVisibilityUpdateSchema):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -141,8 +139,8 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def upload_photo(self, user_id, photo_file):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def upload_photo(self, user, photo_file):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")
@@ -185,8 +183,8 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def delete_photo(self, user_id):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def delete_photo(self, user):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
             raise ServiceError(code=422, msg="User does not exist")

@@ -1,21 +1,19 @@
 import uuid
+from typing import Union
 
-from typing import Union, List
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
-from fastapi import APIRouter, Depends, UploadFile, Form, File
-
-from src.modules.music.service import TrackService
-from src.modules.music.dependencies import get_track_service
-from src.modules.auth.dependencies import get_current_user
-from src.utils.routing.error_handling import ErrorHandlingRoute
-
-from src.modules.music.schemas.track.read import TrackReadSchema
-from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
-from src.modules.music.schemas.track.creation import TrackCreationSchema
-
-from src.modules.music.schemas.exceptions.track_422 import Track422
+from src.modules.auth.dependencies import get_current_user_obj
+from src.modules.auth.models import User
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.music.dependencies import get_track_service
+from src.modules.music.schemas.exceptions.track_422 import Track422
+from src.modules.music.schemas.track.creation import TrackCreationSchema
+from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
+from src.modules.music.schemas.track.read import TrackReadSchema
+from src.modules.music.service import TrackService
+from src.utils.routing.error_handling import ErrorHandlingRoute
 
 music_router = APIRouter(prefix="/music", route_class=ErrorHandlingRoute)
 
@@ -28,9 +26,7 @@ music_router = APIRouter(prefix="/music", route_class=ErrorHandlingRoute)
     response_model=TrackMetadataReadShema,
     responses={422: {"model": Track422}},
 )
-async def track_get(
-    track_id: str, service: TrackService = Depends(get_track_service)
-):
+async def track_get(track_id: str, service: TrackService = Depends(get_track_service)):
     return await service.get_track(track_id=track_id)
 
 
@@ -45,10 +41,10 @@ async def track_get(
     },
 )
 async def my_tracks_get(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: TrackService = Depends(get_track_service),
 ):
-    return await service.get_my_tracks(user_id=user_id)
+    return await service.get_my_tracks(user=user)
 
 
 @music_router.post(
@@ -61,15 +57,15 @@ async def my_tracks_get(
 )
 async def add_track(
     name: str = Form(),
-    artists: List = Form(default=[]),
+    artists: list = Form(default=[]),
     music_file: UploadFile = File(),
     image_file: UploadFile = File(),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: TrackService = Depends(get_track_service),
 ):
     data = TrackCreationSchema(name=name, artists=artists)
     return await service.create_track(
-        user_id=user_id,
+        user=user,
         data=data,
         music_file=music_file,
         image_file=image_file,
@@ -88,7 +84,7 @@ async def add_track(
 )
 async def track_delete(
     track_id: uuid.UUID,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: TrackService = Depends(get_track_service),
 ):
-    return await service.delete_track(user_id=user_id, track_id=track_id)
+    return await service.delete_track(user=user, track_id=track_id)
