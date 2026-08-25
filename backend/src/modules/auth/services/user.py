@@ -5,7 +5,12 @@ from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.utils import JWT, pw_manager
 from src.modules.auth.utils.enums import PasswordHash
 from src.utils import UnitOfWork
-from src.utils.exceptions import ServiceError
+from src.utils.exceptions import (
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+)
 
 
 class UserService:
@@ -25,12 +30,12 @@ class UserService:
         existing_user = await self.__repo.get_by_email(data["email"])
 
         if existing_user is not None:
-            raise ServiceError(code=422, msg="User already exists")
+            raise ConflictError(msg="User already exists")
 
         existing_username = await self.__repo.get_one(username=data["username"])
 
         if existing_username is not None:
-            raise ServiceError(code=422, msg="That username already taken")
+            raise ConflictError(msg="That username already taken")
 
         data["password"] = pw_manager.hash_password(data["password"])
 
@@ -55,7 +60,7 @@ class UserService:
             or existing_user.password is None
             or not password_check
         ):
-            raise ServiceError(code=403, msg="Invalid email or password")
+            raise ForbiddenError(msg="Invalid email or password")
 
         user_id = str(existing_user.id)
         access = self.__jwt.create_access_token(user_id)
@@ -70,10 +75,10 @@ class UserService:
         existing_user = await self.__repo.get_by_id_locked(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         if existing_user.password is not None:
-            raise ServiceError(code=409, msg="User password already exists")
+            raise ConflictError(msg="User password already exists")
 
         data = data.model_dump()
 
@@ -88,10 +93,10 @@ class UserService:
         existing_user = await self.__repo.get_by_id_locked(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         if existing_user.password is None:
-            raise ServiceError(code=400, msg="Password is not set")
+            raise BadRequestError(msg="Password is not set")
 
         data = data.model_dump()
 
@@ -100,7 +105,7 @@ class UserService:
         )
 
         if password_check is False:
-            raise ServiceError(code=403, msg="Incorrect password")
+            raise ForbiddenError(msg="Incorrect password")
 
         existing_user.password = pw_manager.hash_password(data["new_password"])
 
