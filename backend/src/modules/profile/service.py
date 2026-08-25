@@ -9,7 +9,12 @@ from src.modules.profile.schemas.visibility import ProfileVisibilityUpdateSchema
 from src.modules.profile.utils import profile_assembler
 from src.modules.profile.utils.enums import PFPSizeLimit, ProfileMediaTypes
 from src.utils import UnitOfWork
-from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
+from src.utils.exceptions import (
+    ConflictError,
+    FileSizeLimitExceeded,
+    NotFoundError,
+    ValidationError,
+)
 from src.utils.uploads import SizeLimitedStream
 
 
@@ -31,12 +36,12 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_profile = await self.__profile_repo.get_user_by_id(user.id)
 
         if existing_profile is not None:
-            raise ServiceError(code=422, msg="Profile already created")
+            raise ConflictError(msg="Profile already created")
 
         data["user_id"] = user.id
         profile = await self.__profile_repo.create(**data)
@@ -49,7 +54,7 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         return await profile_assembler.owner(
             user=existing_user, repo=self.__profile_repo
@@ -59,7 +64,7 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         return await profile_assembler.public(
             user=existing_user, repo=self.__profile_repo
@@ -69,12 +74,12 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
 
         if existing_profile is None:
-            raise ServiceError(code=422, msg="Profile does not exist")
+            raise NotFoundError(msg="Profile does not exist")
 
         await self.__profile_repo.delete_obj(existing_profile.id)
         await self.__uow.commit()
@@ -85,12 +90,12 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_username = await self.__user_repo.get_one(username=new_username)
 
         if existing_username is not None:
-            raise ServiceError(code=422, msg="That username already taken")
+            raise ConflictError(msg="That username already taken")
 
         existing_user.username = new_username
 
@@ -104,12 +109,12 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
 
         if existing_profile is None:
-            raise ServiceError(code=422, msg="Profile does not exist")
+            raise NotFoundError(msg="Profile does not exist")
 
         for field_name in data.model_fields_set:
             setattr(existing_profile, field_name, getattr(data, field_name))
@@ -124,12 +129,12 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_profile = await self.__profile_repo.get_one(user_id=existing_user.id)
 
         if existing_profile is None:
-            raise ServiceError(code=422, msg="Profile does not exist")
+            raise NotFoundError(msg="Profile does not exist")
         updates = data.model_dump(exclude_unset=True)
         existing_profile.visible_fields.update(updates)
 
@@ -143,16 +148,16 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         if photo_file.content_type not in ProfileMediaTypes.PHOTO_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid image file type")
+            raise ValidationError(msg="Invalid image file type")
 
         if (
             photo_file.size is not None
             and photo_file.size > PFPSizeLimit.MAX_PHOTO_SIZE
         ):
-            raise ServiceError(code=422, msg="Photo file is too big")
+            raise ValidationError(msg="Photo file is too big")
 
         old_photo_key = existing_user.photo_url
         new_photo_key = f"profile/{existing_user.id}/{uuid.uuid4()}"
@@ -166,8 +171,8 @@ class ProfileService:
                 file_type=photo_file.content_type,
                 key=new_photo_key,
             )
-        except FileSizeLimitExceeded as e:
-            raise ServiceError(code=422, msg="Photo file is too big") from e
+        except FileSizeLimitExceeded:
+            raise
 
         existing_user.photo_url = new_photo_key
         await self.__uow.commit()
@@ -187,10 +192,10 @@ class ProfileService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         if existing_user.photo_url is None:
-            raise ServiceError(code=422, msg="No photo set for this user")
+            raise NotFoundError(msg="No photo set for this user")
 
         old_photo_key = existing_user.photo_url
         existing_user.photo_url = None
