@@ -3,7 +3,12 @@ from src.modules.grades.repository import GradeRepository
 from src.modules.music.config import logger
 from src.modules.music.repository import TrackRepository
 from src.utils import UnitOfWork
-from src.utils.exceptions import ServiceError
+from src.utils.exceptions import (
+    ConflictError,
+    InternalServerError,
+    NotFoundError,
+    ServiceError,
+)
 
 
 class GradeService:
@@ -23,12 +28,12 @@ class GradeService:
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
         existing_track = await self.__track_repo.get_one(id=track_id)
 
         if existing_track is None:
-            raise ServiceError(code=422, msg="Track does not exist")
+            raise NotFoundError(msg="Track does not exist")
 
         existing_grade = await self.__grade_repo.get_one(
             user_id=user.id, track_id=existing_track.id
@@ -41,7 +46,7 @@ class GradeService:
             except Exception as e:
                 await self.__uow.rollback()
                 logger.warning(e)
-                raise ServiceError(code=500, msg="Failed to update grade") from e
+                raise InternalServerError(msg="Failed to update grade") from e
             return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
 
         data = {
@@ -54,11 +59,11 @@ class GradeService:
             grade = await self.__grade_repo.create(**data)
             await self.__uow.commit(conflict_msg="You have already graded this track")
             await self.__uow.refresh(grade)
-        except ServiceError:
+        except ConflictError:
             raise
         except Exception as e:
             await self.__uow.rollback()
             logger.warning(e)
-            raise ServiceError(code=500, msg="Failed to update grade") from e
+            raise InternalServerError(msg="Failed to update grade") from e
 
         return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
