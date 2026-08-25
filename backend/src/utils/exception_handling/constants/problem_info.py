@@ -4,6 +4,7 @@ STATUS_PROBLEM_INFO: dict[int, tuple[str, str]] = {
     403: ("forbidden", "Forbidden"),
     404: ("not-found", "Not Found"),
     409: ("conflict", "Conflict"),
+    413: ("content-too-large", "Content Too Large"),
     422: ("unprocessable-entity", "Unprocessable Entity"),
     500: ("internal-server-error", "Internal Server Error"),
     502: ("bad-gateway", "Bad Gateway"),
