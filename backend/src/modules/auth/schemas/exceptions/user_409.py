@@ -5,7 +5,7 @@ from pydantic import Field
 from src.utils.schemas.exception_schema import ExceptionSchema
 
 
-class Password403(ExceptionSchema):
+class User409(ExceptionSchema):
     detail: Union[str, dict] = Field(
-        ..., examples=["Incorrect password"]
+        ..., examples=["User already exists"]
     )

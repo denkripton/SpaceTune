@@ -1,3 +1,5 @@
+from typing import Union
+
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -7,7 +9,8 @@ from src.modules.auth.models import User
 from src.modules.auth.schemas.auth.read import AuthReadSchema
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.exceptions.user_404 import User404
+from src.modules.auth.schemas.exceptions.user_409 import User409
 from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCreateSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
@@ -25,7 +28,7 @@ user_router = APIRouter(prefix="/users", route_class=ErrorHandlingRoute)
     description="Registrate user",
     response_model=UserRead,
     responses={
-        422: {"model": User422},
+        409: {"model": User409},
     },
 )
 async def register_user(
@@ -43,7 +46,6 @@ async def register_user(
     response_model=AuthReadSchema,
     responses={
         403: {"model": Password403},
-        422: {"model": User422},
     },
 )
 async def login_user(
@@ -94,7 +96,9 @@ async def google_login(
     description="Handle Google OAuth callback",
     response_model=AuthReadSchema,
     responses={
-        422: {"model": User422},
+        400: {"description": "Invalid OAuth state or missing profile data"},
+        422: {"description": "Email not verified or invalid OAuth response"},
+        502: {"description": "Failed to reach Google"},
     },
 )
 async def google_callback(
@@ -145,7 +149,8 @@ async def logout_user(response: Response):
     description="Set your password",
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        404: {"model": User404},
+        409: {"model": User409},
     },
 )
 async def add_password(
@@ -163,7 +168,8 @@ async def add_password(
     description="Change existing password",
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        403: {"model": Password403},
+        404: {"model": User404},
     },
 )
 async def change_password(
