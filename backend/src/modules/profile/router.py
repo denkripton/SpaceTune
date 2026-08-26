@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from src.modules.auth.dependencies import get_current_user_obj
 from src.modules.auth.models import User
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.exceptions.user_404 import User404
+from src.modules.auth.schemas.exceptions.user_409 import User409
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.profile.dependencies import get_profile_service
 from src.modules.profile.schemas import (
@@ -15,7 +16,9 @@ from src.modules.profile.schemas import (
     ProfileUpdateSchema,
     ProfileVisibilityUpdateSchema,
 )
-from src.modules.profile.schemas.exceptions.profile_422 import Profile422
+from src.modules.profile.schemas.exceptions.profile_404 import Profile404
+from src.modules.profile.schemas.exceptions.profile_409 import Profile409
+from src.modules.profile.schemas.exceptions.profile_413 import Profile413
 from src.modules.profile.service import ProfileService
 from src.utils.routing.error_handling import ErrorHandlingRoute
 
@@ -30,7 +33,8 @@ profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
     response_model=ProfileCreationSchema,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
+        409: {"model": Profile409},
     },
 )
 async def create_my_profile(
@@ -49,7 +53,8 @@ async def create_my_profile(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        404: {"model": User404},
+        409: {"model": User409},
     },
 )
 async def update_username(
@@ -70,7 +75,7 @@ async def update_username(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": Union[User404, Profile404]},
     },
 )
 async def update_profile_details(
@@ -91,7 +96,7 @@ async def update_profile_details(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": Union[User404, Profile404]},
     },
 )
 async def update_visibility(
@@ -110,7 +115,8 @@ async def update_visibility(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
+        413: {"model": Profile413},
     },
 )
 async def upload_my_photo(
@@ -129,7 +135,7 @@ async def upload_my_photo(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        404: {"model": User404},
     },
 )
 async def get_my_profile(
@@ -150,7 +156,7 @@ async def get_my_profile(
     ),
     response_model=ProfilePublicReadSchema,
     responses={
-        422: {"model": User422},
+        404: {"model": User404},
     },
 )
 async def get_user_profile(
@@ -167,7 +173,7 @@ async def get_user_profile(
     response_model=Union[ProfilePrivateReadSchema, UserRead],
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
     },
 )
 async def delete_my_photo(
@@ -184,7 +190,7 @@ async def delete_my_photo(
     description="Delete your profile",
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": Union[User404, Profile404]},
     },
 )
 async def delete_my_profile(
