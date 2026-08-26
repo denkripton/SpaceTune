@@ -5,7 +5,7 @@ from pydantic import Field
 from src.utils.schemas.exception_schema import ExceptionSchema
 
 
-class Track422(ExceptionSchema):
+class Track413(ExceptionSchema):
     detail: Union[str, dict] = Field(
-        ..., examples=["Track already exists or it doesn't exist"]
+        ..., examples=["Audio file is too big", "Image file is too big"]
     )

@@ -6,9 +6,11 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from src.modules.auth.dependencies import get_current_user_obj
 from src.modules.auth.models import User
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.exceptions.user_404 import User404
 from src.modules.music.dependencies import get_track_service
-from src.modules.music.schemas.exceptions.track_422 import Track422
+from src.modules.music.schemas.exceptions.track_404 import Track404
+from src.modules.music.schemas.exceptions.track_409 import Track409
+from src.modules.music.schemas.exceptions.track_413 import Track413
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.schemas.track.metadata import TrackMetadataReadShema
 from src.modules.music.schemas.track.read import TrackReadSchema
@@ -24,7 +26,9 @@ music_router = APIRouter(prefix="/music", route_class=ErrorHandlingRoute)
     tags=["Track CRUD's"],
     description="Get track with metadata",
     response_model=TrackMetadataReadShema,
-    responses={422: {"model": Track422}},
+    responses={
+        404: {"model": Track404},
+    },
 )
 async def track_get(track_id: str, service: TrackService = Depends(get_track_service)):
     return await service.get_track(track_id=track_id)
@@ -53,7 +57,12 @@ async def my_tracks_get(
     tags=["Track CRUD's"],
     description="Create track",
     response_model=TrackReadSchema,
-    responses={401: {"model": User401}, 422: {"model": Union[Track422, User422]}},
+    responses={
+        401: {"model": User401},
+        404: {"model": User404},
+        409: {"model": Track409},
+        413: {"model": Track413},
+    },
 )
 async def add_track(
     name: str = Form(),
@@ -79,7 +88,7 @@ async def add_track(
     description="Delete your track",
     responses={
         401: {"model": User401},
-        422: {"model": Union[Track422, User422]},
+        404: {"model": Union[User404, Track404]},
     },
 )
 async def track_delete(
