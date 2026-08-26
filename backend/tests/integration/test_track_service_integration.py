@@ -71,7 +71,7 @@ async def test_create_track_end_to_end_persists_to_real_database(
     assert persisted.owner_id == owner.id
 
 
-async def test_create_track_raises_422_when_duplicate_name_for_same_owner(
+async def test_create_track_raises_409_when_duplicate_name_for_same_owner(
     db_session, track_service, mocked_bucket_manager
 ):
     owner = await create_real_user(db_session)
@@ -94,7 +94,7 @@ async def test_create_track_raises_422_when_duplicate_name_for_same_owner(
                 image_file=make_upload_file(content_type="image/png"),
             )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "Track already exist"
 
 

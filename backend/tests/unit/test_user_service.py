@@ -33,17 +33,17 @@ def make_login_schema(email="user@example.com", password="Som3Th!ng"):
     return schema
 
 
-async def test_register_raises_422_when_email_already_exists(user_service, user_repo):
+async def test_register_raises_409_when_email_already_exists(user_service, user_repo):
     user_repo.get_by_email = AsyncMock(return_value=make_fake_user())
 
     with pytest.raises(ServiceError) as exc_info:
         await user_service.register(make_creation_schema())
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "User already exists"
 
 
-async def test_register_raises_422_when_username_already_taken(user_service, user_repo):
+async def test_register_raises_409_when_username_already_taken(user_service, user_repo):
 
     user_repo.get_by_email = AsyncMock(return_value=None)
     user_repo.get_one = AsyncMock(return_value=make_fake_user(username="taken"))
@@ -51,7 +51,7 @@ async def test_register_raises_422_when_username_already_taken(user_service, use
     with pytest.raises(ServiceError) as exc_info:
         await user_service.register(make_creation_schema(username="taken"))
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "That username already taken"
 
 
@@ -172,7 +172,7 @@ async def test_login_returns_access_and_refresh_tokens_on_success(
     fake_jwt.create_refresh_token.assert_called_once_with(str(existing_user.id))
 
 
-async def test_set_password_raises_422_when_user_does_not_exist(
+async def test_set_password_raises_404_when_user_does_not_exist(
     user_service, user_repo
 ):
     user_repo.get_by_id_locked = AsyncMock(return_value=None)
@@ -184,9 +184,9 @@ async def test_set_password_raises_422_when_user_does_not_exist(
     }
 
     with pytest.raises(ServiceError) as exc_info:
-        await user_service.set_password(user_id=uuid.uuid4(), data=schema)
+        await user_service.set_password(user=make_fake_user(), data=schema)
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "User does not exist"
 
 
@@ -203,7 +203,7 @@ async def test_set_password_raises_409_when_password_already_set(
     }
 
     with pytest.raises(ServiceError) as exc_info:
-        await user_service.set_password(user_id=existing_user.id, data=schema)
+        await user_service.set_password(user=existing_user, data=schema)
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.message == "User password already exists"
@@ -221,7 +221,7 @@ async def test_set_password_succeeds_for_oauth_user_without_password(
         "confirm_password": "BrandNew1!",
     }
 
-    result = await user_service.set_password(user_id=oauth_user.id, data=schema)
+    result = await user_service.set_password(user=oauth_user, data=schema)
 
     assert result == "Password added successfully"
     assert oauth_user.password != b"BrandNew1!"
@@ -243,7 +243,7 @@ async def test_change_password_raises_400_when_password_not_set(
     }
 
     with pytest.raises(ServiceError) as exc_info:
-        await user_service.change_password(user_id=oauth_user.id, data=schema)
+        await user_service.change_password(user=oauth_user, data=schema)
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.message == "Password is not set"
@@ -264,7 +264,7 @@ async def test_change_password_raises_403_on_wrong_current_password(
     }
 
     with pytest.raises(ServiceError) as exc_info:
-        await user_service.change_password(user_id=existing_user.id, data=schema)
+        await user_service.change_password(user=existing_user, data=schema)
 
     assert exc_info.value.status_code == 403
     assert exc_info.value.message == "Incorrect password"
@@ -282,7 +282,7 @@ async def test_set_password_uses_locked_read_not_plain_get_by_id(
         "confirm_password": "BrandNew1!",
     }
 
-    await user_service.set_password(user_id=oauth_user.id, data=schema)
+    await user_service.set_password(user=oauth_user, data=schema)
 
     user_repo.get_by_id_locked.assert_awaited_once_with(id=oauth_user.id)
     user_repo.get_by_id.assert_not_awaited()
@@ -302,7 +302,7 @@ async def test_change_password_uses_locked_read_not_plain_get_by_id(
         "confirm_password": "BrandNewPass1!",
     }
 
-    await user_service.change_password(user_id=existing_user.id, data=schema)
+    await user_service.change_password(user=existing_user, data=schema)
 
     user_repo.get_by_id_locked.assert_awaited_once_with(id=existing_user.id)
     user_repo.get_by_id.assert_not_awaited()
@@ -320,7 +320,7 @@ async def test_change_password_updates_hash_on_success(user_service, user_repo):
         "confirm_password": "BrandNewPass1!",
     }
 
-    result = await user_service.change_password(user_id=existing_user.id, data=schema)
+    result = await user_service.change_password(user=existing_user, data=schema)
 
     assert result == "Password changed successfully"
     assert pw_manager.check_password("BrandNewPass1!", existing_user.password) is True

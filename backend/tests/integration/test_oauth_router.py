@@ -41,7 +41,7 @@ class TestOAuthRouterFlow:
             params={"code": "irrelevant", "state": "attacker-supplied-state"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 400
         assert "Invalid or missing OAuth state" in response.text
 
     async def test_callback_rejects_mismatched_state(self, client):
@@ -54,7 +54,7 @@ class TestOAuthRouterFlow:
             params={"code": "irrelevant", "state": "tampered-value"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     @respx.mock
     async def test_callback_succeeds_with_valid_state_and_mocks_google(self, client, monkeypatch):

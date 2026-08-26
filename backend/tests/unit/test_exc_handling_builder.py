@@ -20,6 +20,14 @@ def test_build_problem_maps_502_to_bad_gateway():
     assert problem["status"] == 502
 
 
+def test_build_problem_maps_413_to_content_too_large():
+    problem = build_problem(status_code=413, detail="Audio file is too big")
+
+    assert problem["type"] == "https://spacetune.dev/errors/content-too-large"
+    assert problem["title"] == "Content Too Large"
+    assert problem["status"] == 413
+
+
 def test_build_problem_falls_back_to_generic_type_for_unmapped_status():
     problem = build_problem(status_code=418, detail="I'm a teapot")
 

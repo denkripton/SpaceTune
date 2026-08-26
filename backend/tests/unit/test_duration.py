@@ -26,7 +26,7 @@ def make_streaming_file(total_bytes: int, chunk_size: int = 1024 * 1024):
     return file
 
 
-async def test_count_duration_raises_422_when_stream_exceeds_limit():
+async def test_count_duration_raises_413_when_stream_exceeds_limit():
     file = make_streaming_file(total_bytes=FileSizeLimit.MAX_AUDIO_SIZE.value + (1024 * 1024))
 
     with pytest.raises(ServiceError) as exc_info:
