@@ -5,7 +5,7 @@ import httpx
 
 from src.config import settings
 from src.modules.auth.repository import UserRepository
-from src.modules.auth.utils import JWT
+from src.modules.auth.services.token import TokenService
 from src.utils import UnitOfWork
 from src.utils.exceptions import (
     BadGatewayError,
@@ -19,9 +19,14 @@ class OAuthService:
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
     STATE_BYTES = 32
 
-    def __init__(self, repo: UserRepository, jwt: JWT, uow: UnitOfWork):
+    def __init__(
+        self,
+        repo: UserRepository,
+        token_service: TokenService,
+        uow: UnitOfWork,
+    ):
         self.__repo = repo
-        self.__jwt = jwt
+        self.__token_service = token_service
         self.__uow = uow
 
     def generate_state(self) -> str:
@@ -121,10 +126,6 @@ class OAuthService:
             await self.__uow.refresh(user)
 
         user_id = str(user.id)
-        access = self.__jwt.create_access_token(user_id)
-        refresh = self.__jwt.create_refresh_token(user_id)
+        tokens = self.__token_service.create_token_pair(user_id)
 
-        return {
-            "access": access,
-            "refresh": refresh,
-        }
+        return tokens

@@ -1,12 +1,11 @@
-from typing import Union
-
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 
-from src.modules.auth import get_oauth_service, get_user_service
+from src.modules.auth import get_oauth_service, get_token_service, get_user_service
 from src.modules.auth.dependencies import get_current_user_obj
 from src.modules.auth.models import User
 from src.modules.auth.schemas.auth.read import AuthReadSchema
+from src.modules.auth.schemas.auth.refresh_read import TokenRefreshReadSchema
 from src.modules.auth.schemas.exceptions.password_403 import Password403
 from src.modules.auth.schemas.exceptions.user_401 import User401
 from src.modules.auth.schemas.exceptions.user_404 import User404
@@ -15,7 +14,8 @@ from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCrea
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
 from src.modules.auth.schemas.user.read import UserRead
-from src.modules.auth.services import OAuthService, UserService
+from src.modules.auth.services import OAuthService, TokenService, UserService
+from src.utils.exceptions import UnauthorizedError
 from src.utils.routing.error_handling import ErrorHandlingRoute
 
 user_router = APIRouter(prefix="/users", route_class=ErrorHandlingRoute)
@@ -65,6 +65,30 @@ async def login_user(
     )
 
     return user
+
+
+@user_router.post(
+    "/refresh",
+    summary="Refresh access token",
+    tags=["Authentication"],
+    description="Exchange a valid refresh token cookie for a new access token",
+    response_model=TokenRefreshReadSchema,
+    responses={
+        401: {"model": User401},
+    },
+)
+async def refresh_token(
+    request: Request,
+    service: TokenService = Depends(get_token_service),
+):
+    refresh_token_value = request.cookies.get("refresh_token")
+
+    if refresh_token_value is None:
+        raise UnauthorizedError(msg="Refresh token is missing")
+
+    access = service.refresh_access_token(refresh_token=refresh_token_value)
+
+    return {"access": access}
 
 
 @user_router.get(

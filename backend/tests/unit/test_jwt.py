@@ -111,3 +111,77 @@ def test_validate_token_returns_none_when_sub_claim_is_empty_string(jwt_service)
     )
 
     assert jwt_service.validate_token(token_with_empty_sub) is None
+
+
+def test_access_token_has_access_type_claim(jwt_service):
+    token = jwt_service.create_access_token(id="user-123")
+
+    payload = jwt_service.decode_token(token)
+
+    assert payload["type"] == "access"
+
+
+def test_refresh_token_has_refresh_type_claim(jwt_service):
+    token = jwt_service.create_refresh_token(id="user-123")
+
+    payload = jwt_service.decode_token(token)
+
+    assert payload["type"] == "refresh"
+
+
+def test_validate_access_token_returns_payload_for_access_token(jwt_service):
+    access = jwt_service.create_access_token(id="user-123")
+
+    payload = jwt_service.validate_access_token(access)
+
+    assert payload is not None
+    assert payload["sub"] == "user-123"
+
+
+def test_validate_access_token_rejects_refresh_token(jwt_service):
+    refresh = jwt_service.create_refresh_token(id="user-123")
+
+    assert jwt_service.validate_access_token(refresh) is None
+
+
+def test_validate_access_token_rejects_token_without_type_claim(jwt_service):
+    now = datetime.now(UTC)
+    payload = {
+        "sub": "user-123",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=15)).timestamp()),
+    }
+    untyped_token = pyjwt.encode(
+        payload, key=settings.JWT_SECRET_KEY, algorithm=JWT.algorithm
+    )
+
+    assert jwt_service.validate_access_token(untyped_token) is None
+
+
+def test_validate_refresh_token_returns_payload_for_refresh_token(jwt_service):
+    refresh = jwt_service.create_refresh_token(id="user-123")
+
+    payload = jwt_service.validate_refresh_token(refresh)
+
+    assert payload is not None
+    assert payload["sub"] == "user-123"
+
+
+def test_validate_refresh_token_rejects_access_token(jwt_service):
+    access = jwt_service.create_access_token(id="user-123")
+
+    assert jwt_service.validate_refresh_token(access) is None
+
+
+def test_validate_refresh_token_rejects_token_without_type_claim(jwt_service):
+    now = datetime.now(UTC)
+    payload = {
+        "sub": "user-123",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(days=30)).timestamp()),
+    }
+    untyped_token = pyjwt.encode(
+        payload, key=settings.JWT_SECRET_KEY, algorithm=JWT.algorithm
+    )
+
+    assert jwt_service.validate_refresh_token(untyped_token) is None

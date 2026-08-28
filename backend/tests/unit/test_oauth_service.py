@@ -13,8 +13,8 @@ from tests.factories import make_fake_user
 
 
 @pytest.fixture
-def oauth_service(user_repo, fake_jwt, fake_uow):
-    return OAuthService(repo=user_repo, jwt=fake_jwt, uow=fake_uow)
+def oauth_service(user_repo, fake_token_service, fake_uow):
+    return OAuthService(repo=user_repo, token_service=fake_token_service, uow=fake_uow)
 
 
 def mock_google_token_endpoint(
@@ -71,7 +71,7 @@ async def test_login_raises_502_when_userinfo_fetch_fails(oauth_service):
 
 @respx.mock
 async def test_login_does_not_create_duplicate_when_google_id_already_linked(
-    oauth_service, user_repo, fake_jwt
+    oauth_service, user_repo, fake_token_service
 ):
     mock_google_token_endpoint()
     mock_google_userinfo_endpoint(sub="google-sub-123", email="oauthuser@gmail.com")
@@ -89,7 +89,9 @@ async def test_login_does_not_create_duplicate_when_google_id_already_linked(
     user_repo.session.commit.assert_not_called()
 
     assert result == {"access": "fake.access.token", "refresh": "fake.refresh.token"}
-    fake_jwt.create_access_token.assert_called_once_with(str(existing_user.id))
+    fake_token_service.create_token_pair.assert_called_once_with(
+        str(existing_user.id)
+    )
 
 
 @respx.mock

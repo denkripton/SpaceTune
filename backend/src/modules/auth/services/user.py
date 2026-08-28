@@ -2,7 +2,8 @@ from src.modules.auth.repository import UserRepository
 from src.modules.auth.schemas.password import PasswordChangeSchema, PasswordCreateSchema
 from src.modules.auth.schemas.user.creation import UserCreateSchema
 from src.modules.auth.schemas.user.login import UserLoginSchema
-from src.modules.auth.utils import JWT, pw_manager
+from src.modules.auth.services.token import TokenService
+from src.modules.auth.utils import pw_manager
 from src.modules.auth.utils.enums import PasswordHash
 from src.utils import UnitOfWork
 from src.utils.exceptions import (
@@ -17,11 +18,11 @@ class UserService:
     def __init__(
         self,
         repo: UserRepository,
-        jwt: JWT,
+        token_service: TokenService,
         uow: UnitOfWork,
     ):
         self.__repo = repo
-        self.__jwt = jwt
+        self.__token_service = token_service
         self.__uow = uow
 
     async def register(self, data: UserCreateSchema):
@@ -63,13 +64,9 @@ class UserService:
             raise ForbiddenError(msg="Invalid email or password")
 
         user_id = str(existing_user.id)
-        access = self.__jwt.create_access_token(user_id)
-        refresh = self.__jwt.create_refresh_token(user_id)
+        tokens = self.__token_service.create_token_pair(user_id)
 
-        return {
-            "access": access,
-            "refresh": refresh,
-        }
+        return tokens
 
     async def set_password(self, user, data: PasswordCreateSchema):
         existing_user = await self.__repo.get_by_id_locked(id=user.id)

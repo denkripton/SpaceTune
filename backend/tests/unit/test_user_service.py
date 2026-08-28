@@ -10,8 +10,8 @@ from tests.factories import make_fake_user
 
 
 @pytest.fixture
-def user_service(user_repo, fake_jwt, fake_uow):
-    return UserService(repo=user_repo, jwt=fake_jwt, uow=fake_uow)
+def user_service(user_repo, fake_token_service, fake_uow):
+    return UserService(repo=user_repo, token_service=fake_token_service, uow=fake_uow)
 
 
 def make_creation_schema(
@@ -158,7 +158,7 @@ async def test_login_calls_check_password_even_when_user_does_not_exist(
 
 
 async def test_login_returns_access_and_refresh_tokens_on_success(
-    user_service, user_repo, fake_jwt
+    user_service, user_repo, fake_token_service
 ):
     real_hash = pw_manager.hash_password("CorrectPass1!")
     existing_user = make_fake_user(password=real_hash)
@@ -168,8 +168,9 @@ async def test_login_returns_access_and_refresh_tokens_on_success(
 
     assert result == {"access": "fake.access.token", "refresh": "fake.refresh.token"}
 
-    fake_jwt.create_access_token.assert_called_once_with(str(existing_user.id))
-    fake_jwt.create_refresh_token.assert_called_once_with(str(existing_user.id))
+    fake_token_service.create_token_pair.assert_called_once_with(
+        str(existing_user.id)
+    )
 
 
 async def test_set_password_raises_404_when_user_does_not_exist(
