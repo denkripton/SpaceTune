@@ -1,8 +1,7 @@
-import respx
 import httpx
 import pytest
+import respx
 from httpx import ASGITransport
-
 from src.api import api
 from src.config import settings
 from src.dependencies import get_session
@@ -57,7 +56,9 @@ class TestOAuthRouterFlow:
         assert response.status_code == 400
 
     @respx.mock
-    async def test_callback_succeeds_with_valid_state_and_mocks_google(self, client, monkeypatch):
+    async def test_callback_succeeds_with_valid_state_and_mocks_google(
+        self, client, monkeypatch
+    ):
         from src.modules.auth.services.oauth import OAuthService
 
         respx.post(OAuthService.GOOGLE_TOKEN_URL).mock(
@@ -65,7 +66,12 @@ class TestOAuthRouterFlow:
         )
         respx.get(settings.GOOGLE_USERINFO_URL).mock(
             return_value=httpx.Response(
-                200, json={"email": "newuser@test.com", "sub": "google-sub-id"}
+                200,
+                json={
+                    "email": "newuser@test.com",
+                    "sub": "google-sub-id",
+                    "email_verified": True,
+                },
             )
         )
 

@@ -52,7 +52,7 @@ async def test_create_track_end_to_end_persists_to_real_database(
         patch("src.modules.music.service.bucket_manager", mocked_bucket_manager),
     ):
         result = await track_service.create_track(
-            user_id=str(owner.id),
+            user=owner,
             data=creation_data,
             music_file=make_upload_file(),
             image_file=make_upload_file(content_type="image/png"),
@@ -88,7 +88,7 @@ async def test_create_track_raises_409_when_duplicate_name_for_same_owner(
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=make_upload_file(content_type="image/png"),
@@ -121,7 +121,7 @@ async def test_create_track_allows_same_name_for_different_owners(
         patch("src.modules.music.service.bucket_manager", mocked_bucket_manager),
     ):
         result = await track_service.create_track(
-            user_id=str(owner_two.id),
+            user=owner_two,
             data=creation_data,
             music_file=make_upload_file(),
             image_file=make_upload_file(content_type="image/png"),
@@ -130,15 +130,16 @@ async def test_create_track_allows_same_name_for_different_owners(
     assert result.name == "Shared Title"
 
 
-async def test_create_track_raises_service_error_and_cleans_up_s3_when_db_write_fails(
+async def test_create_track_raises_409_when_track_url_collides_on_commit(
     db_session, track_service, mocked_bucket_manager
 ):
     owner = await create_real_user(db_session)
+    owner_id = owner.id
     fixed_uuid = uuid.uuid4()
-    colliding_track_url = f"track/{owner.id}/{fixed_uuid}"
+    colliding_track_url = f"track/{owner_id}/{fixed_uuid}"
     await create_real_track(
         db_session,
-        owner_id=owner.id,
+        owner_id=owner_id,
         name="Pre-existing",
         track_url=colliding_track_url,
     )
@@ -157,14 +158,14 @@ async def test_create_track_raises_service_error_and_cleans_up_s3_when_db_write_
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=make_upload_file(content_type="image/png"),
             )
 
-    assert exc_info.value.status_code == 500
-    assert exc_info.value.message == "Failed to save track"
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.message == "Track already exist"
 
     uploaded_keys = {
         call.kwargs["key"] for call in mocked_bucket_manager.upload_file.call_args_list
@@ -176,7 +177,7 @@ async def test_create_track_raises_service_error_and_cleans_up_s3_when_db_write_
     assert len(uploaded_keys) == 2
 
     track_repo = TrackRepository(session=db_session)
-    assert await track_repo.get_one(owner_id=owner.id, name="Will Collide") is None
+    assert await track_repo.get_one(owner_id=owner_id, name="Will Collide") is None
 
 
 async def test_delete_track_removes_track_and_existing_grades(
@@ -188,7 +189,7 @@ async def test_delete_track_removes_track_and_existing_grades(
 
     with patch("src.modules.music.service.bucket_manager", mocked_bucket_manager):
         result = await track_service.delete_track(
-            user_id=str(owner.id),
+            user=owner,
             track_id=track.id,
         )
 
