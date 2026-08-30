@@ -129,7 +129,7 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user, track_id):
+    async def delete_track(self, user, track_id: uuid.UUID):
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
@@ -162,7 +162,7 @@ class TrackService:
 
         return "Track has been deleted succesfuly"
 
-    async def get_track(self, track_id):
+    async def get_track(self, track_id: uuid.UUID):
 
         existing_track = await self.__track_repo.get_by_id(id=track_id)
         if existing_track is None:

@@ -49,6 +49,6 @@ class Track(Base):
         passive_deletes=True,
     )
 
-    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
     owner: Mapped["User"] = relationship(back_populates="track")

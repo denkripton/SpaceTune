@@ -30,7 +30,9 @@ music_router = APIRouter(prefix="/music", route_class=ErrorHandlingRoute)
         404: {"model": Track404},
     },
 )
-async def track_get(track_id: str, service: TrackService = Depends(get_track_service)):
+async def track_get(
+    track_id: uuid.UUID, service: TrackService = Depends(get_track_service)
+):
     return await service.get_track(track_id=track_id)
 
 
