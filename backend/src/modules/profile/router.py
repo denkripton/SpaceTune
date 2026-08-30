@@ -1,3 +1,4 @@
+import uuid
 from typing import Union
 
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -160,7 +161,7 @@ async def get_my_profile(
     },
 )
 async def get_user_profile(
-    user_id: str, service: ProfileService = Depends(get_profile_service)
+    user_id: uuid.UUID, service: ProfileService = Depends(get_profile_service)
 ):
     return await service.get_user_profile(user_id=user_id)
 

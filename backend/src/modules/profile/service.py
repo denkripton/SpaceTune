@@ -60,7 +60,7 @@ class ProfileService:
             user=existing_user, repo=self.__profile_repo
         )
 
-    async def get_user_profile(self, user_id):
+    async def get_user_profile(self, user_id: uuid.UUID):
         existing_user = await self.__user_repo.get_by_id(id=user_id)
 
         if existing_user is None:

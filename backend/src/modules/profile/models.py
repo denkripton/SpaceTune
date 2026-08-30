@@ -38,6 +38,6 @@ class Profile(Base):
         nullable=False,
     )
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), unique=True)
 
     user: Mapped["User"] = relationship(back_populates="profile")
