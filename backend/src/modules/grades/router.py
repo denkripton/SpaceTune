@@ -1,3 +1,4 @@
+import uuid
 from typing import Union
 
 from fastapi import APIRouter, Depends, Form
@@ -25,7 +26,7 @@ grade_router = APIRouter(prefix="/grades", route_class=ErrorHandlingRoute)
     },
 )
 async def place_grade(
-    track_id: str,
+    track_id: uuid.UUID,
     grade: int = Form(ge=1, le=10),
     user: User = Depends(get_current_user_obj),
     service: GradeService = Depends(get_grade_service),

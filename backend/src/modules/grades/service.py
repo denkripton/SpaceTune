@@ -1,3 +1,5 @@
+import uuid
+
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.config import logger
@@ -24,7 +26,7 @@ class GradeService:
         self.__grade_repo = grade_repo
         self.__uow = uow
 
-    async def grade_track(self, user, track_id, user_grade: int):
+    async def grade_track(self, user, track_id: uuid.UUID, user_grade: int):
         existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
