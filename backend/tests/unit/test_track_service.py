@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from src.modules.music.service import TrackService
 from src.modules.music.utils.enums import FileSizeLimit
 from src.utils.exceptions import ServiceError
-
 from tests.factories import (
     make_fake_bucket_manager,
     make_fake_track,

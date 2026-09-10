@@ -5,10 +5,10 @@ import pytest
 import respx
 from httpx import Response
 from sqlalchemy.exc import IntegrityError
+
 from src.config import settings
 from src.modules.auth.services.oauth import OAuthService
 from src.utils.exceptions import ServiceError
-
 from tests.factories import make_fake_user
 
 

@@ -139,10 +139,47 @@ Returns `200` when the database is reachable, or `503` if it isn't.
 
 ### 8. Running tests
 
-From `backend/`:
+Unit tests mock the database and run without any external dependency:
 
 ```bash
-uv run pytest
+cd backend
+uv run pytest tests/unit
 ```
 
-Some integration tests require a real PostgreSQL connection and are skipped automatically if one isn't available in the environment.
+Integration tests need a real PostgreSQL connection. This project uses an isolated,
+ephemeral test database — it lives in a separate `db-test` service (RAM-backed via
+`tmpfs`, no persistent volume) so each run starts clean and nothing needs manual
+cleanup between runs:
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml up -d db-test
+docker compose -f compose.yml -f compose.dev.yml exec db-test pg_isready -U ${DB_USER:-postgres}
+
+cd backend
+uv run pytest
+
+docker compose -f compose.yml -f compose.dev.yml rm -fsv db-test
+```
+
+The `pg_isready` check may need a few retries right after `up -d` — Postgres takes
+a couple of seconds to accept connections. Run it again if it reports "no response".
+
+If `db-test` is left running between sessions, that's harmless: its data lives in
+`tmpfs` and disappears the moment the container stops, so there's nothing to reset
+manually the way the persistent `db` service sometimes needs (see the note on
+`docker compose down -v` below).
+
+### Troubleshooting: permission errors after a Dockerfile change
+
+If `docker compose up` fails with a `PermissionError` during migrations (or any
+other file-access error) shortly after pulling a change to `backend/docker/Dockerfile`
+or the `compose*.yml` files, try this before digging further:
+
+```bash
+docker compose -f compose.yml -f compose.dev.yml down -v
+docker compose -f compose.yml -f compose.dev.yml up --build
+```
+
+`down -v` removes anonymous volumes (e.g. the `.venv` volume used for hot-reload),
+which can retain stale ownership from before the Dockerfile change. This resolves
+the issue in most cases without needing a deeper investigation.

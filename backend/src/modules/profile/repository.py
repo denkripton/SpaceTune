@@ -1,7 +1,7 @@
 import uuid
 
-from src.repositories import SQLAlchemyRepository
 from src.modules.profile.models import Profile
+from src.repositories import SQLAlchemyRepository
 
 
 class ProfileRepository(SQLAlchemyRepository):

@@ -3,13 +3,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
-from src.modules.auth.schemas.user.read import UserRead
 from src.modules.profile.schemas.read import ProfilePrivateReadSchema, ProfilePublicReadSchema
 from src.modules.profile.schemas.update import ProfileUpdateSchema
 from src.modules.profile.schemas.visibility import ProfileVisibilityUpdateSchema
 from src.modules.profile.service import ProfileService
 from src.modules.profile.utils.enums import PFPSizeLimit
+from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
 from tests.factories import make_fake_bucket_manager, make_fake_profile, make_fake_user
 
 

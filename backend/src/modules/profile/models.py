@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from sqlalchemy import UUID, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -18,9 +17,9 @@ class Profile(Base):
     )
 
     birth_date: Mapped[Date] = mapped_column(Date)
-    bio: Mapped[Optional[str]] = mapped_column(Text)
-    country: Mapped[Optional[str]] = mapped_column(String(50))
-    phone_number: Mapped[Optional[str]] = mapped_column(String(50))
+    bio: Mapped[str | None] = mapped_column(Text)
+    country: Mapped[str | None] = mapped_column(String(50))
+    phone_number: Mapped[str | None] = mapped_column(String(50))
 
     visible_fields: Mapped[dict] = mapped_column(
         MutableDict.as_mutable(JSONB),

@@ -2,14 +2,14 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from src.utils import UnitOfWork
+
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.music.schemas.track.creation import TrackCreationSchema
 from src.modules.music.service import TrackService
+from src.utils import UnitOfWork
 from src.utils.exceptions import ServiceError
-
 from tests.factories import (
     create_real_grade,
     create_real_track,

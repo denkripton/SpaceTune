@@ -10,7 +10,6 @@ from src.utils import UnitOfWork
 from src.utils.exceptions import (
     BadGatewayError,
     BadRequestError,
-    ConflictError,
     ValidationError,
 )
 

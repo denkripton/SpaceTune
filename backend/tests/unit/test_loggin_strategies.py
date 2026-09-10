@@ -1,4 +1,5 @@
 import pytest
+
 from src.utils.logging.strategies import is_sensitive_key
 
 

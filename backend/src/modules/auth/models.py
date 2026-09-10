@@ -1,5 +1,4 @@
 import uuid
-from typing import List, Optional
 
 from sqlalchemy import UUID, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,10 +13,10 @@ class User(Base):
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
     )
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[Optional[bytes]] = mapped_column(nullable=True)
+    password: Mapped[bytes | None] = mapped_column(nullable=True)
     email: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
-    photo_url: Mapped[Optional[str]] = mapped_column(String(100), unique=True)
+    photo_url: Mapped[str | None] = mapped_column(String(100), unique=True)
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -30,9 +29,9 @@ class User(Base):
     )
 
     profile: Mapped["Profile"] = relationship(back_populates="user")
-    track: Mapped[List["Track"]] = relationship(back_populates="owner")
-    user_grades_conn: Mapped[List["Grade"]] = relationship(back_populates="user_conn")
+    track: Mapped[list["Track"]] = relationship(back_populates="owner")
+    user_grades_conn: Mapped[list["Grade"]] = relationship(back_populates="user_conn")
 
-    google_id: Mapped[Optional[str]] = mapped_column(
+    google_id: Mapped[str | None] = mapped_column(
         String(100), unique=True, nullable=True
     )

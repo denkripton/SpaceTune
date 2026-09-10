@@ -1,4 +1,3 @@
-from typing import Optional
 
 from src.modules.auth.utils import JWT
 from src.utils.exceptions import UnauthorizedError
@@ -16,7 +15,7 @@ class TokenService:
             "refresh": refresh,
         }
 
-    def refresh_access_token(self, refresh_token: Optional[str]) -> str:
+    def refresh_access_token(self, refresh_token: str | None) -> str:
         payload = self.__jwt.validate_refresh_token(refresh_token)
 
         if not payload:
@@ -24,7 +23,7 @@ class TokenService:
 
         return self.__jwt.create_access_token(payload["sub"])
 
-    def validate_access(self, token: Optional[str]) -> Optional[str]:
+    def validate_access(self, token: str | None) -> str | None:
         payload = self.__jwt.validate_access_token(token)
 
         if not payload:

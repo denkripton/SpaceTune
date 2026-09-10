@@ -3,8 +3,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 
-
-
 class OAuthStateCleanupMiddleware(BaseHTTPMiddleware):
     STATE_COOKIE_NAME = "oauth_state"
 

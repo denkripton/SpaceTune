@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.modules.music.utils.enums import FileSizeLimit
 from src.modules.music.utils.duration import count_duration
+from src.modules.music.utils.enums import FileSizeLimit
 from src.utils.exceptions import ServiceError
 
 

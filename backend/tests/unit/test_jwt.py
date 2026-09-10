@@ -3,8 +3,8 @@ from datetime import UTC, datetime, timedelta
 import jwt as pyjwt
 import pytest
 
-from src.modules.auth.utils.jwt import JWT
 from src.config import settings
+from src.modules.auth.utils.jwt import JWT
 
 
 def test_jwt_module_imports_without_error():

@@ -1,12 +1,12 @@
 from fastapi import Depends
 
-from src.utils import UnitOfWork
 from src.dependencies import RepoFactory, get_unit_of_work
 from src.modules.auth import user_repository
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.grades.service import GradeService
 from src.modules.music.repository import TrackRepository
+from src.utils import UnitOfWork
 
 track_repository = RepoFactory(repo=TrackRepository)
 grade_repository = RepoFactory(repo=GradeRepository)

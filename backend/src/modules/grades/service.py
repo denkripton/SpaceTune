@@ -9,7 +9,6 @@ from src.utils.exceptions import (
     ConflictError,
     InternalServerError,
     NotFoundError,
-    ServiceError,
 )
 
 

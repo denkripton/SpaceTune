@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Optional
 
 from jwt import decode, encode
 from jwt.exceptions import PyJWTError
@@ -40,7 +39,7 @@ class JWT:
         token = self.create_token(payload)
         return token
 
-    def create_refresh_token(self, id: str, expiration: Optional[int] = None) -> str:
+    def create_refresh_token(self, id: str, expiration: int | None = None) -> str:
         now = datetime.now(UTC)
         iat = int(now.timestamp())
         exp = (
@@ -58,7 +57,7 @@ class JWT:
         token = self.create_token(payload)
         return token
 
-    def validate_token(self, token: Optional[str]) -> Optional[dict]:
+    def validate_token(self, token: str | None) -> dict | None:
         if not token:
             return None
         try:
@@ -69,13 +68,13 @@ class JWT:
             return None
         return payload
 
-    def validate_access_token(self, token: Optional[str]) -> Optional[dict]:
+    def validate_access_token(self, token: str | None) -> dict | None:
         payload = self.validate_token(token)
         if payload is None or payload.get("type") != TokenType.ACCESS.value:
             return None
         return payload
 
-    def validate_refresh_token(self, token: Optional[str]) -> Optional[dict]:
+    def validate_refresh_token(self, token: str | None) -> dict | None:
         payload = self.validate_token(token)
         if payload is None or payload.get("type") != TokenType.REFRESH.value:
             return None

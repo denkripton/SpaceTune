@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from src.modules.grades.service import GradeService
 from src.utils.exceptions import ServiceError
-
 from tests.factories import make_fake_grade, make_fake_track, make_fake_user
 
 
