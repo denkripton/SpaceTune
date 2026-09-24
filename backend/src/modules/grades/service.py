@@ -48,7 +48,10 @@ class GradeService:
                 await self.__uow.rollback()
                 logger.warning(e)
                 raise InternalServerError(msg="Failed to update grade") from e
-            return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
+            return (
+                f"You placed: {user_grade} to {existing_track.name}, "
+                f"created by {existing_track.artists}"
+            )
 
         data = {
             "grade": user_grade,
@@ -67,4 +70,7 @@ class GradeService:
             logger.warning(e)
             raise InternalServerError(msg="Failed to update grade") from e
 
-        return f"You placed: {user_grade} to {existing_track.name}, created by {existing_track.artists}"
+        return (
+            f"You placed: {user_grade} to {existing_track.name}, "
+            f"created by {existing_track.artists}"
+        )

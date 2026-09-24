@@ -1,5 +1,4 @@
 import uuid
-from typing import Union
 
 from fastapi import APIRouter, Depends, Form
 
@@ -22,7 +21,7 @@ grade_router = APIRouter(prefix="/grades", route_class=ErrorHandlingRoute)
     tags=["Grades CRUD's"],
     responses={
         401: {"model": User401},
-        404: {"model": Union[User404, Track404]},
+        404: {"model": User404 | Track404},
     },
 )
 async def place_grade(

@@ -1,5 +1,4 @@
 import uuid
-from typing import Union
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
@@ -90,7 +89,7 @@ async def add_track(
     description="Delete your track",
     responses={
         401: {"model": User401},
-        404: {"model": Union[User404, Track404]},
+        404: {"model": User404 | Track404},
     },
 )
 async def track_delete(

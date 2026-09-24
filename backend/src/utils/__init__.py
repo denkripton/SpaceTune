@@ -21,6 +21,7 @@ __all__ = [
     "contact",
     "description",
     "openapi_url",
+    "register_exception_handlers",
     "summary",
     "tags_metadata",
     "title",

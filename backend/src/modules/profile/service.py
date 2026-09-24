@@ -179,9 +179,9 @@ class ProfileService:
         await self.__uow.refresh(existing_user)
 
         if old_photo_key is not None:
-            try:
+            try:  # noqa: SIM105
                 await bucket_manager.delete_file(key=old_photo_key)
-            except Exception:
+            except Exception:  # noqa: S110
                 pass
 
         return await profile_assembler.owner(
@@ -202,9 +202,9 @@ class ProfileService:
         await self.__uow.commit()
         await self.__uow.refresh(existing_user)
 
-        try:
+        try:  # noqa: SIM105
             await bucket_manager.delete_file(key=old_photo_key)
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
         return await profile_assembler.owner(

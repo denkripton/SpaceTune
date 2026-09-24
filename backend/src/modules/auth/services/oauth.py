@@ -15,7 +15,7 @@ from src.utils.exceptions import (
 
 
 class OAuthService:
-    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"  # noqa: S105 (URL, not a secret)
     STATE_BYTES = 32
 
     def __init__(
@@ -120,7 +120,10 @@ class OAuthService:
                 )
 
             await self.__uow.commit(
-                conflict_msg="Account with this email or Google ID was just created. Please try again"
+                conflict_msg=(
+                    "Account with this email or Google ID was just created. "
+                    "Please try again"
+                )
             )
             await self.__uow.refresh(user)
 

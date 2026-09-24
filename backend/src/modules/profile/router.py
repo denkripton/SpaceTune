@@ -1,5 +1,4 @@
 import uuid
-from typing import Union
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
@@ -51,7 +50,7 @@ async def create_my_profile(
     summary="Update username (Protected)",
     tags=["Profile CRUD's"],
     description="Change your username",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
         404: {"model": User404},
@@ -73,10 +72,10 @@ async def update_username(
     description=(
         "Partially update your profile's bio, country, phone_number, or birth_date"
     ),
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        404: {"model": Union[User404, Profile404]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def update_profile_details(
@@ -94,10 +93,10 @@ async def update_profile_details(
     description=(
         "Control which of your profile fields are visible to other users viewing "
     ),
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        404: {"model": Union[User404, Profile404]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def update_visibility(
@@ -113,7 +112,7 @@ async def update_visibility(
     summary="Upload profile photo (Protected)",
     tags=["Profile CRUD's"],
     description="Upload or replace your profile photo",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
         404: {"model": User404},
@@ -133,7 +132,7 @@ async def upload_my_photo(
     summary="Read your profile (Protected)",
     tags=["Profile CRUD's"],
     description="Get your profile",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
         404: {"model": User404},
@@ -171,7 +170,7 @@ async def get_user_profile(
     summary="Remove profile photo (Protected)",
     tags=["Profile CRUD's"],
     description="Remove your profile photo, independent of deleting the whole profile",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
         404: {"model": User404},
@@ -191,7 +190,7 @@ async def delete_my_photo(
     description="Delete your profile",
     responses={
         401: {"model": User401},
-        404: {"model": Union[User404, Profile404]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def delete_my_profile(

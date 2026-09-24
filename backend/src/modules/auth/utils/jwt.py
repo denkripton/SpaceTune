@@ -43,9 +43,9 @@ class JWT:
         now = datetime.now(UTC)
         iat = int(now.timestamp())
         exp = (
-            int((now + timedelta(days=TokenLifetime.REFRESH_DAYS.value)).timestamp())
-            if not expiration
-            else expiration
+            expiration
+            if expiration
+            else int((now + timedelta(days=TokenLifetime.REFRESH_DAYS.value)).timestamp())
         )
         payload = {
             "sub": id,
