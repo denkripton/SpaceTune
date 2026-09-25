@@ -53,16 +53,15 @@ The `compose.yml` files live at the repository root — all commands below are r
 
 ### 2. Environment variables setup
 
-Two `.env` files are required — one at the repo root, one inside `backend/`:
+A single `.env` file at the repo root is required — it holds the database connection components and the app secrets:
 
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
 ```
 
-**Root `.env`** — `DB_USER`, `DB_PASSWORD`, `DB_NAME` (used by Docker Compose to provision the `db` service).
+**`.env`** — `DB_USER`, `DB_PASSWORD`, `DB_NAME` (Docker Compose provisions the `db` service from them, and the backend builds its connection string out of them), plus the app secrets: `JWT_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_REDIRECT_URI`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_USERINFO_URL`, `AWS_SECRET`, `AWS_ACCESS`, `AWS_REGION`, `BUCKET_NAME`.
 
-**`backend/.env`** — app secrets: `JWT_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_REDIRECT_URI`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_USERINFO_URL`, `AWS_SECRET`, `AWS_ACCESS`, `AWS_REGION`, `BUCKET_NAME`.
+`DB_HOST`, `DB_PORT` and `TEST_DB_PORT` are optional and default to `localhost`, `5432` and `5433` — override them only if PostgreSQL lives elsewhere. Docker Compose overrides `DB_HOST` with `db` for the container.
 
 ### 3. Run with Docker Compose (recommended)
 
@@ -103,7 +102,7 @@ Install dependencies:
 uv sync --frozen
 ```
 
-This requires a PostgreSQL instance reachable at the `DB_URL` you set in `backend/.env` (e.g. run only the `db` service via `docker compose up db`).
+This requires a PostgreSQL instance reachable at the `DB_HOST`/`DB_PORT` from the root `.env` (default `localhost:5432`, e.g. run only the `db` service via `docker compose up db`).
 
 ### 5. Database migrations
 

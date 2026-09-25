@@ -11,8 +11,6 @@ env:
   DB_USER: postgres
   DB_PASSWORD: ci-test-password
   DB_NAME: SpaceTune
-  DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5432/SpaceTune"
-  TEST_DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5433/SpaceTune_test"
   JWT_SECRET_KEY: ci-test-secret-not-for-production
   GOOGLE_CLIENT_ID: ci-test-client-id
   GOOGLE_REDIRECT_URI: https://ci-test.invalid/callback

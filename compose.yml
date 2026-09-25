@@ -3,11 +3,20 @@ services:
     build:
       context: .
       dockerfile: backend/docker/Dockerfile
-    env_file:
-      - .env
     environment:
-      DB_URL: "postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}"
-      TEST_DB_URL: "postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}_test"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_USERINFO_URL: ${GOOGLE_USERINFO_URL}
+      AWS_SECRET: ${AWS_SECRET}
+      AWS_ACCESS: ${AWS_ACCESS}
+      AWS_REGION: ${AWS_REGION}
+      BUCKET_NAME: ${BUCKET_NAME}
     depends_on:
       db:
         condition: service_healthy
@@ -16,8 +25,6 @@ services:
 
   db:
     image: postgres:16
-    env_file:
-      - .env
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
