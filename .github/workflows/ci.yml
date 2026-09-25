@@ -11,11 +11,22 @@ env:
   DB_USER: postgres
   DB_PASSWORD: ci-test-password
   DB_NAME: SpaceTune
+  DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5432/SpaceTune"
+  TEST_DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5433/SpaceTune_test"
+  JWT_SECRET_KEY: ci-test-secret-not-for-production
+  GOOGLE_CLIENT_ID: ci-test-client-id
+  GOOGLE_REDIRECT_URI: https://ci-test.invalid/callback
+  GOOGLE_CLIENT_SECRET: ci-test-client-secret
+  GOOGLE_USERINFO_URL: https://ci-test.invalid/userinfo
+  AWS_SECRET: ci-test-aws-secret
+  AWS_ACCESS: ci-test-aws-access
+  AWS_REGION: us-east-1
+  BUCKET_NAME: ci-test-bucket
 
 jobs:
   lint:
     name: Lint (ruff)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +45,7 @@ jobs:
 
   pip-audit:
     name: Dependency audit (pip-audit)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -52,7 +63,7 @@ jobs:
 
   unit:
     name: Unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint
     steps:
       - uses: actions/checkout@v4
@@ -72,20 +83,8 @@ jobs:
 
   integration:
     name: Integration tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint
-    env:
-      DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5432/SpaceTune"
-      TEST_DB_URL: "postgresql+asyncpg://postgres:ci-test-password@localhost:5433/SpaceTune_test"
-      JWT_SECRET_KEY: ci-test-secret-not-for-production
-      GOOGLE_CLIENT_ID: ci-test-client-id
-      GOOGLE_REDIRECT_URI: https://ci-test.invalid/callback
-      GOOGLE_CLIENT_SECRET: ci-test-client-secret
-      GOOGLE_USERINFO_URL: https://ci-test.invalid/userinfo
-      AWS_SECRET: ci-test-aws-secret
-      AWS_ACCESS: ci-test-aws-access
-      AWS_REGION: us-east-1
-      BUCKET_NAME: ci-test-bucket
     steps:
       - uses: actions/checkout@v4
 
@@ -99,20 +98,7 @@ jobs:
         run: uv sync --frozen --package backend --group dev
 
       - name: Start isolated test database
-        run: docker compose -f compose.yml -f compose.dev.yml up -d db-test
-
-      - name: Wait for test database to be ready
-        run: |
-          for i in $(seq 1 20); do
-            if docker compose -f compose.yml -f compose.dev.yml exec -T db-test pg_isready -U "$DB_USER" -d "${DB_NAME}_test" > /dev/null 2>&1; then
-              echo "db-test is ready."
-              exit 0
-            fi
-            echo "Waiting for db-test... ($i/20)"
-            sleep 1
-          done
-          echo "db-test did not become ready in time."
-          exit 1
+        run: docker compose -f compose.yml -f compose.dev.yml up -d --wait db-test
 
       - name: Run integration tests
         working-directory: backend
