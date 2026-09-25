@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 from src.modules.auth.models import User
@@ -45,7 +45,7 @@ def make_fake_track(
     track.duration = duration
     track.track_url = track_url or f"track/{track.owner_id}/{uuid.uuid4()}"
     track.photo_url = photo_url or f"image/{track.owner_id}/{uuid.uuid4()}"
-    track.created_at = created_at or datetime(2026, 1, 1, tzinfo=timezone.utc)
+    track.created_at = created_at or datetime(2026, 1, 1, tzinfo=UTC)
     return track
 
 

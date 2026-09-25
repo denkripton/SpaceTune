@@ -1,9 +1,8 @@
-import re
 
-from pydantic import field_validator, EmailStr, Field
+from pydantic import EmailStr, Field, field_validator
 
-from src.utils.schemas.base_schema import BaseSchema
 from src.modules.auth.utils.password_validation import password_validation
+from src.utils.schemas.base_schema import BaseSchema
 
 
 class UserCreateSchema(BaseSchema):

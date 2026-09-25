@@ -73,9 +73,11 @@ def profile_repo(shared_session):
 
 
 @pytest.fixture
-def fake_jwt():
-    jwt = MagicMock()
-    jwt.create_access_token = MagicMock(return_value="fake.access.token")
-    jwt.create_refresh_token = MagicMock(return_value="fake.refresh.token")
-    jwt.validate_token = MagicMock(return_value=None)
-    return jwt
+def fake_token_service():
+    service = MagicMock()
+    service.create_token_pair = MagicMock(
+        return_value={"access": "fake.access.token", "refresh": "fake.refresh.token"}
+    )
+    service.refresh_access_token = MagicMock(return_value="fake.access.token")
+    service.validate_access = MagicMock(return_value=None)
+    return service

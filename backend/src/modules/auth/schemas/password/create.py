@@ -1,9 +1,9 @@
-import re
 
-from pydantic import field_validator, Field, ValidationInfo
+from pydantic import Field, ValidationInfo, field_validator
 
-from src.utils.schemas.base_schema import BaseSchema
 from src.modules.auth.utils.password_validation import password_validation
+from src.utils.schemas.base_schema import BaseSchema
+
 
 class PasswordCreateSchema(BaseSchema):
     password: str = Field(min_length=8, max_length=64, examples=["som@Th1ng"])

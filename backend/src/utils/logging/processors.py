@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 from typing import Any
 
 from src.utils.logging.constants import REDACTED_PLACEHOLDER

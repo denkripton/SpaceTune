@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from src.modules.music.service import TrackService
 from src.modules.music.utils.enums import FileSizeLimit
 from src.utils.exceptions import ServiceError
-
 from tests.factories import (
     make_fake_bucket_manager,
     make_fake_track,
@@ -36,7 +36,7 @@ def make_upload_file(content_type="audio/mpeg", filename="track.mp3", size=1024)
     "user_id_value",
     [str(uuid.uuid4()), str(uuid.uuid4())],
 )
-async def test_create_track_raises_422_when_user_does_not_exist(
+async def test_create_track_raises_404_when_user_does_not_exist(
     track_service, user_repo, user_id_value
 ):
     user_repo.get_by_id = AsyncMock(return_value=None)
@@ -46,18 +46,18 @@ async def test_create_track_raises_422_when_user_does_not_exist(
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.create_track(
-            user_id=user_id_value,
+            user=make_fake_user(),
             data=creation_data,
             music_file=make_upload_file(),
             image_file=make_upload_file(content_type="image/png"),
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "User does not exist"
     track_service._TrackService__track_repo.get_one.assert_not_called()
 
 
-async def test_create_track_raises_422_when_track_name_already_taken_by_owner(
+async def test_create_track_raises_409_when_track_name_already_taken_by_owner(
     track_service, user_repo, track_repo
 ):
 
@@ -72,13 +72,13 @@ async def test_create_track_raises_422_when_track_name_already_taken_by_owner(
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.create_track(
-            user_id=str(owner.id),
+            user=owner,
             data=creation_data,
             music_file=make_upload_file(),
             image_file=make_upload_file(content_type="image/png"),
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "Track already exist"
 
     track_repo.get_one.assert_awaited_once()
@@ -109,7 +109,7 @@ async def test_create_track_raises_422_on_invalid_audio_content_type(
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=bad_music_file,
                 image_file=make_upload_file(content_type="image/png"),
@@ -141,7 +141,7 @@ async def test_create_track_raises_422_on_invalid_image_content_type(
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=bad_image_file,
@@ -185,14 +185,14 @@ async def test_create_track_raises_422_when_audio_stream_exceeds_size_limit(
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=oversized_music_file,
                 image_file=make_upload_file(content_type="image/png"),
             )
 
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "Audio file is too big"
+    assert exc_info.value.status_code == 413
+    assert exc_info.value.message == f"Stream exceeded {FileSizeLimit.MAX_AUDIO_SIZE.value} bytes"
 
 
 async def test_create_track_raises_422_when_image_stream_exceeds_size_limit(
@@ -229,14 +229,14 @@ async def test_create_track_raises_422_when_image_stream_exceeds_size_limit(
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=music_file,
                 image_file=oversized_image_file,
             )
 
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "Image file is too big"
+    assert exc_info.value.status_code == 413
+    assert exc_info.value.message == f"Stream exceeded {FileSizeLimit.MAX_IMAGE_SIZE.value} bytes"
 
 
 async def test_create_track_allows_upload_without_declared_size(
@@ -263,7 +263,7 @@ async def test_create_track_allows_upload_without_declared_size(
         patch("src.modules.music.service.bucket_manager", make_fake_bucket_manager()),
     ):
         result = await track_service.create_track(
-            user_id=str(owner.id),
+            user=owner,
             data=creation_data,
             music_file=music_file,
             image_file=image_file,
@@ -305,14 +305,14 @@ async def test_create_track_raises_422_when_image_stream_exceeds_limit_without_d
     ):
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=music_file,
                 image_file=image_file,
             )
 
-    assert exc_info.value.status_code == 422
-    assert exc_info.value.message == "Image file is too big"
+    assert exc_info.value.status_code == 413
+    assert exc_info.value.message == f"Stream exceeded {FileSizeLimit.MAX_IMAGE_SIZE.value} bytes"
     fake_bucket.delete_file.assert_called_once()
 
 
@@ -334,7 +334,7 @@ async def test_create_track_validates_content_type_before_count_duration(
     ) as fake_count_duration:
         with pytest.raises(ServiceError) as exc_info:
             await track_service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=bad_file,
                 image_file=make_upload_file(content_type="image/png"),
@@ -375,7 +375,7 @@ async def test_create_track_success_places_owner_first_in_artists(
         ) as fake_bucket,
     ):
         result = await track_service.create_track(
-            user_id=str(owner.id),
+            user=owner,
             data=creation_data,
             music_file=make_upload_file(),
             image_file=make_upload_file(content_type="image/png"),
@@ -431,7 +431,7 @@ async def test_create_track_raises_service_error_when_db_write_fails():
     ):
         with pytest.raises(ServiceError) as exc_info:
             await service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=make_upload_file(content_type="image/png"),
@@ -445,7 +445,7 @@ async def test_create_track_raises_service_error_when_db_write_fails():
     assert fake_bucket.delete_file.call_count == 2
 
 
-async def test_create_track_raises_422_when_db_unique_constraint_violated():
+async def test_create_track_raises_409_when_db_unique_constraint_violated():
     owner = make_fake_user()
     user_repo_mock = MagicMock()
     user_repo_mock.get_by_id = AsyncMock(return_value=owner)
@@ -484,13 +484,13 @@ async def test_create_track_raises_422_when_db_unique_constraint_violated():
     ):
         with pytest.raises(ServiceError) as exc_info:
             await service.create_track(
-                user_id=str(owner.id),
+                user=owner,
                 data=creation_data,
                 music_file=make_upload_file(),
                 image_file=make_upload_file(content_type="image/png"),
             )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "Track already exist"
     assert isinstance(exc_info.value.__cause__, IntegrityError)
 
@@ -498,21 +498,21 @@ async def test_create_track_raises_422_when_db_unique_constraint_violated():
     assert fake_bucket.delete_file.call_count == 2
 
 
-async def test_delete_track_raises_422_when_user_does_not_exist(
+async def test_delete_track_raises_404_when_user_does_not_exist(
     track_service, user_repo
 ):
     user_repo.get_by_id = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.delete_track(
-            user_id=str(uuid.uuid4()), track_id=uuid.uuid4()
+            user=make_fake_user(), track_id=uuid.uuid4()
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "User does not exist"
 
 
-async def test_delete_track_raises_422_when_track_does_not_exist(
+async def test_delete_track_raises_404_when_track_does_not_exist(
     track_service, user_repo, track_repo
 ):
     owner = make_fake_user()
@@ -520,9 +520,9 @@ async def test_delete_track_raises_422_when_track_does_not_exist(
     track_repo.get_one = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
-        await track_service.delete_track(user_id=str(owner.id), track_id=uuid.uuid4())
+        await track_service.delete_track(user=owner, track_id=uuid.uuid4())
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "Track does not exist"
 
 
@@ -541,7 +541,7 @@ async def test_delete_track_removes_both_files_from_s3_and_deletes_row(
         "src.modules.music.service.bucket_manager", make_fake_bucket_manager()
     ) as fake_bucket:
         result = await track_service.delete_track(
-            user_id=str(owner.id), track_id=existing_track.id
+            user=owner, track_id=existing_track.id
         )
 
     fake_bucket.delete_file.assert_any_call(key=existing_track.track_url)
@@ -569,7 +569,7 @@ async def test_delete_track_succeeds_when_track_file_s3_delete_fails(
 
     with patch("src.modules.music.service.bucket_manager", fake_bucket):
         result = await track_service.delete_track(
-            user_id=str(owner.id), track_id=existing_track.id
+            user=owner, track_id=existing_track.id
         )
 
     assert fake_bucket.delete_file.call_count == 2
@@ -593,20 +593,20 @@ async def test_delete_track_attempts_photo_delete_even_if_audio_delete_fails(
 
     with patch("src.modules.music.service.bucket_manager", fake_bucket):
         result = await track_service.delete_track(
-            user_id=str(owner.id), track_id=existing_track.id
+            user=owner, track_id=existing_track.id
         )
 
     assert fake_bucket.delete_file.call_count == 2
     assert result == "Track has been deleted succesfuly"
 
 
-async def test_get_track_raises_422_when_track_not_found(track_service, track_repo):
+async def test_get_track_raises_404_when_track_not_found(track_service, track_repo):
     track_repo.get_by_id = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
         await track_service.get_track(track_id=uuid.uuid4())
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "Track does not exist"
 
 
@@ -668,7 +668,7 @@ async def test_get_my_tracks_returns_empty_list_when_user_has_no_tracks(
     track_repo.get_many = AsyncMock(return_value=[])
     grade_repo.get_aggregates_by_track_ids = AsyncMock(return_value={})
 
-    result = await track_service.get_my_tracks(user_id=uuid.uuid4())
+    result = await track_service.get_my_tracks(user=make_fake_user())
 
     assert result == []
     grade_repo.get_aggregates_by_track_ids.assert_awaited_once_with([])
@@ -689,7 +689,7 @@ async def test_get_my_tracks_assembles_metadata_and_media_for_each_track(
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
         fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
-        result = await track_service.get_my_tracks(user_id=owner_id)
+        result = await track_service.get_my_tracks(user=make_fake_user(user_id=owner_id))
 
     assert len(result) == 2
     assert result[0].metadata.name == "Track One"
@@ -712,7 +712,7 @@ async def test_get_my_tracks_calls_grade_aggregation_exactly_once(
 
     with patch("src.modules.music.service.bucket_manager") as fake_bucket:
         fake_bucket.presigned_url.return_value = "https://s3.fake/presigned"
-        await track_service.get_my_tracks(user_id=owner_id)
+        await track_service.get_my_tracks(user=make_fake_user(user_id=owner_id))
 
     assert grade_repo.get_aggregates_by_track_ids.await_count == 1
     called_with = grade_repo.get_aggregates_by_track_ids.await_args.args[0]

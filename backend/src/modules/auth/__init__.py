@@ -1,19 +1,21 @@
 from src.modules.auth.dependencies import (
-    user_repository,
-    get_user_service,
-    get_oauth_service,
     get_current_user,
+    get_current_user_obj,
+    get_oauth_service,
+    get_token_service,
+    get_user_service,
+    user_repository,
 )
-
-from src.modules.auth.services import UserService, OAuthService
+from src.modules.auth.services import OAuthService, TokenService, UserService
 
 __all__ = [
-    "user_repository",
-    
-    "get_user_service",
-    "get_oauth_service"
-    "get_current_user",
-
+    "OAuthService",
+    "TokenService",
     "UserService",
-    "OAuthService"
+    "get_current_user",
+    "get_current_user_obj",
+    "get_oauth_service",
+    "get_token_service",
+    "get_user_service",
+    "user_repository",
 ]

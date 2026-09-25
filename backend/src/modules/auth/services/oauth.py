@@ -5,18 +5,27 @@ import httpx
 
 from src.config import settings
 from src.modules.auth.repository import UserRepository
-from src.modules.auth.utils import JWT
+from src.modules.auth.services.token import TokenService
 from src.utils import UnitOfWork
-from src.utils.exceptions import ServiceError
+from src.utils.exceptions import (
+    BadGatewayError,
+    BadRequestError,
+    ValidationError,
+)
 
 
 class OAuthService:
-    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"  # noqa: S105 (URL, not a secret)
     STATE_BYTES = 32
 
-    def __init__(self, repo: UserRepository, jwt: JWT, uow: UnitOfWork):
+    def __init__(
+        self,
+        repo: UserRepository,
+        token_service: TokenService,
+        uow: UnitOfWork,
+    ):
         self.__repo = repo
-        self.__jwt = jwt
+        self.__token_service = token_service
         self.__uow = uow
 
     def generate_state(self) -> str:
@@ -28,7 +37,7 @@ class OAuthService:
             or not expected
             or not secrets.compare_digest(received, expected)
         ):
-            raise ServiceError(code=422, msg="Invalid or missing OAuth state")
+            raise BadRequestError(msg="Invalid or missing OAuth state")
 
     def get_redirect_url(self, state: str) -> str:
         params = {
@@ -54,8 +63,8 @@ class OAuthService:
                 },
             )
         if response.status_code != 200:
-            raise ServiceError(
-                code=502, msg="Failed to reach Google for OAuth token exchange"
+            raise BadGatewayError(
+                msg="Failed to reach Google for OAuth token exchange"
             )
         return response.json()
 
@@ -66,7 +75,7 @@ class OAuthService:
                 headers={"Authorization": f"Bearer {access_token}"},
             )
         if response.status_code != 200:
-            raise ServiceError(code=502, msg="Failed to reach Google for user info")
+            raise BadGatewayError(msg="Failed to reach Google for user info")
         return response.json()
 
     async def login(self, code: str, state: str | None, expected_state: str | None):
@@ -76,7 +85,7 @@ class OAuthService:
 
         access_token = tokens.get("access_token")
         if not access_token:
-            raise ServiceError(code=422, msg="Failed to exchange OAuth code")
+            raise BadRequestError(msg="Failed to exchange OAuth code")
 
         user_info = await self._get_userinfo(access_token)
 
@@ -85,8 +94,8 @@ class OAuthService:
         email_verified = user_info.get("email_verified")
 
         if not sub or not email:
-            raise ServiceError(
-                code=422, msg="Google account is missing required profile data"
+            raise BadRequestError(
+                msg="Google account is missing required profile data"
             )
 
         username = user_info.get("name", email.split("@")[0])[:20]
@@ -95,8 +104,7 @@ class OAuthService:
 
         if user is None:
             if email_verified is not True:
-                raise ServiceError(
-                    code=422,
+                raise ValidationError(
                     msg="Email is not verified, cannot sign in with this Google account",
                 )
 
@@ -112,15 +120,14 @@ class OAuthService:
                 )
 
             await self.__uow.commit(
-                conflict_msg="Account with this email or Google ID was just created. Please try again"
+                conflict_msg=(
+                    "Account with this email or Google ID was just created. "
+                    "Please try again"
+                )
             )
             await self.__uow.refresh(user)
 
         user_id = str(user.id)
-        access = self.__jwt.create_access_token(user_id)
-        refresh = self.__jwt.create_refresh_token(user_id)
+        tokens = self.__token_service.create_token_pair(user_id)
 
-        return {
-            "access": access,
-            "refresh": refresh,
-        }
+        return tokens
