@@ -1,10 +1,12 @@
-from typing import Union
+import uuid
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from src.modules.auth.dependencies import get_current_user
+from src.modules.auth.dependencies import get_current_user_obj
+from src.modules.auth.models import User
 from src.modules.auth.schemas.exceptions.user_401 import User401
-from src.modules.auth.schemas.exceptions.user_422 import User422
+from src.modules.auth.schemas.exceptions.user_404 import User404
+from src.modules.auth.schemas.exceptions.user_409 import User409
 from src.modules.auth.schemas.user.read import UserRead
 from src.modules.profile.dependencies import get_profile_service
 from src.modules.profile.schemas import (
@@ -14,7 +16,9 @@ from src.modules.profile.schemas import (
     ProfileUpdateSchema,
     ProfileVisibilityUpdateSchema,
 )
-from src.modules.profile.schemas.exceptions.profile_422 import Profile422
+from src.modules.profile.schemas.exceptions.profile_404 import Profile404
+from src.modules.profile.schemas.exceptions.profile_409 import Profile409
+from src.modules.profile.schemas.exceptions.profile_413 import Profile413
 from src.modules.profile.service import ProfileService
 from src.utils.routing.error_handling import ErrorHandlingRoute
 
@@ -29,15 +33,16 @@ profile_router = APIRouter(prefix="/profile", route_class=ErrorHandlingRoute)
     response_model=ProfileCreationSchema,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
+        409: {"model": Profile409},
     },
 )
 async def create_my_profile(
     data: ProfileCreationSchema,
     service: ProfileService = Depends(get_profile_service),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
 ):
-    return await service.create_profile(user_id=user_id, data=data)
+    return await service.create_profile(user=user, data=data)
 
 
 @profile_router.patch(
@@ -45,18 +50,19 @@ async def create_my_profile(
     summary="Update username (Protected)",
     tags=["Profile CRUD's"],
     description="Change your username",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        404: {"model": User404},
+        409: {"model": User409},
     },
 )
 async def update_username(
     new_username: str,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_username(user_id=user_id, new_username=new_username)
+    return await service.update_username(user=user, new_username=new_username)
 
 
 @profile_router.patch(
@@ -66,18 +72,18 @@ async def update_username(
     description=(
         "Partially update your profile's bio, country, phone_number, or birth_date"
     ),
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def update_profile_details(
     data: ProfileUpdateSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_profile(user_id=user_id, data=data)
+    return await service.update_profile(user=user, data=data)
 
 
 @profile_router.put(
@@ -87,18 +93,18 @@ async def update_profile_details(
     description=(
         "Control which of your profile fields are visible to other users viewing "
     ),
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def update_visibility(
     data: ProfileVisibilityUpdateSchema,
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.update_visibility(user_id=user_id, data=data)
+    return await service.update_visibility(user=user, data=data)
 
 
 @profile_router.post(
@@ -106,18 +112,19 @@ async def update_visibility(
     summary="Upload profile photo (Protected)",
     tags=["Profile CRUD's"],
     description="Upload or replace your profile photo",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
+        413: {"model": Profile413},
     },
 )
 async def upload_my_photo(
     photo_file: UploadFile = File(),
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.upload_photo(user_id=user_id, photo_file=photo_file)
+    return await service.upload_photo(user=user, photo_file=photo_file)
 
 
 @profile_router.get(
@@ -125,17 +132,17 @@ async def upload_my_photo(
     summary="Read your profile (Protected)",
     tags=["Profile CRUD's"],
     description="Get your profile",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": User422},
+        404: {"model": User404},
     },
 )
 async def get_my_profile(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.get_my_profile(user_id=user_id)
+    return await service.get_my_profile(user=user)
 
 
 @profile_router.get(
@@ -149,11 +156,11 @@ async def get_my_profile(
     ),
     response_model=ProfilePublicReadSchema,
     responses={
-        422: {"model": User422},
+        404: {"model": User404},
     },
 )
 async def get_user_profile(
-    user_id: str, service: ProfileService = Depends(get_profile_service)
+    user_id: uuid.UUID, service: ProfileService = Depends(get_profile_service)
 ):
     return await service.get_user_profile(user_id=user_id)
 
@@ -163,17 +170,17 @@ async def get_user_profile(
     summary="Remove profile photo (Protected)",
     tags=["Profile CRUD's"],
     description="Remove your profile photo, independent of deleting the whole profile",
-    response_model=Union[ProfilePrivateReadSchema, UserRead],
+    response_model=ProfilePrivateReadSchema | UserRead,
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404},
     },
 )
 async def delete_my_photo(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.delete_photo(user_id=user_id)
+    return await service.delete_photo(user=user)
 
 
 @profile_router.delete(
@@ -183,11 +190,11 @@ async def delete_my_photo(
     description="Delete your profile",
     responses={
         401: {"model": User401},
-        422: {"model": Union[Profile422, User422]},
+        404: {"model": User404 | Profile404},
     },
 )
 async def delete_my_profile(
-    user_id: str = Depends(get_current_user),
+    user: User = Depends(get_current_user_obj),
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.delete_profile(user_id=user_id)
+    return await service.delete_profile(user=user)

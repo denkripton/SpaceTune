@@ -1,7 +1,7 @@
 import uuid
 
-from src.repositories import SQLAlchemyRepository
 from src.modules.music.models import Track
+from src.repositories import SQLAlchemyRepository
 
 
 class TrackRepository(SQLAlchemyRepository):

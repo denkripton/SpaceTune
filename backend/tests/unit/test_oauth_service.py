@@ -5,16 +5,16 @@ import pytest
 import respx
 from httpx import Response
 from sqlalchemy.exc import IntegrityError
+
 from src.config import settings
 from src.modules.auth.services.oauth import OAuthService
 from src.utils.exceptions import ServiceError
-
 from tests.factories import make_fake_user
 
 
 @pytest.fixture
-def oauth_service(user_repo, fake_jwt, fake_uow):
-    return OAuthService(repo=user_repo, jwt=fake_jwt, uow=fake_uow)
+def oauth_service(user_repo, fake_token_service, fake_uow):
+    return OAuthService(repo=user_repo, token_service=fake_token_service, uow=fake_uow)
 
 
 def mock_google_token_endpoint(
@@ -71,7 +71,7 @@ async def test_login_raises_502_when_userinfo_fetch_fails(oauth_service):
 
 @respx.mock
 async def test_login_does_not_create_duplicate_when_google_id_already_linked(
-    oauth_service, user_repo, fake_jwt
+    oauth_service, user_repo, fake_token_service
 ):
     mock_google_token_endpoint()
     mock_google_userinfo_endpoint(sub="google-sub-123", email="oauthuser@gmail.com")
@@ -89,7 +89,9 @@ async def test_login_does_not_create_duplicate_when_google_id_already_linked(
     user_repo.session.commit.assert_not_called()
 
     assert result == {"access": "fake.access.token", "refresh": "fake.refresh.token"}
-    fake_jwt.create_access_token.assert_called_once_with(str(existing_user.id))
+    fake_token_service.create_token_pair.assert_called_once_with(
+        str(existing_user.id)
+    )
 
 
 @respx.mock
@@ -212,14 +214,14 @@ async def test_login_rejects_creating_new_account_when_email_not_verified(
 
 
 @respx.mock
-async def test_login_raises_422_when_concurrent_request_creates_account_first(
+async def test_login_raises_409_when_concurrent_request_creates_account_first(
     oauth_service, user_repo
 ):
     """
     Simulates the race window: two concurrent OAuth logins for a brand-new
     email both pass the pre-checks (get_one/get_by_email both return None),
     but the second one's commit() hits the unique constraint because the
-    first request already committed. This must surface as a clean 422,
+    first request already committed. This must surface as a clean 409,
     not an unhandled IntegrityError bubbling up as a 500.
     """
     mock_google_token_endpoint()
@@ -241,12 +243,12 @@ async def test_login_raises_422_when_concurrent_request_creates_account_first(
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     user_repo.session.rollback.assert_awaited_once()
 
 
 @respx.mock
-async def test_login_raises_422_when_concurrent_request_links_account_first(
+async def test_login_raises_409_when_concurrent_request_links_account_first(
     oauth_service, user_repo
 ):
     """
@@ -271,7 +273,7 @@ async def test_login_raises_422_when_concurrent_request_links_account_first(
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     user_repo.session.rollback.assert_awaited_once()
 
 
@@ -356,7 +358,7 @@ async def test_login_truncates_username_to_twenty_characters(oauth_service, user
 
 
 @respx.mock
-async def test_login_raises_422_when_token_response_missing_access_token(
+async def test_login_raises_400_when_token_response_missing_access_token(
     oauth_service, user_repo
 ):
     respx.post(OAuthService.GOOGLE_TOKEN_URL).mock(
@@ -368,12 +370,12 @@ async def test_login_raises_422_when_token_response_missing_access_token(
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 400
     user_repo.get_one.assert_not_called()
 
 
 @respx.mock
-async def test_login_raises_422_when_userinfo_missing_sub(oauth_service, user_repo):
+async def test_login_raises_400_when_userinfo_missing_sub(oauth_service, user_repo):
     mock_google_token_endpoint()
     respx.get(settings.GOOGLE_USERINFO_URL).mock(
         return_value=Response(
@@ -386,12 +388,12 @@ async def test_login_raises_422_when_userinfo_missing_sub(oauth_service, user_re
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 400
     user_repo.get_one.assert_not_called()
 
 
 @respx.mock
-async def test_login_raises_422_when_userinfo_missing_email(oauth_service, user_repo):
+async def test_login_raises_400_when_userinfo_missing_email(oauth_service, user_repo):
     mock_google_token_endpoint()
     respx.get(settings.GOOGLE_USERINFO_URL).mock(
         return_value=Response(200, json={"sub": "sub-no-email", "email_verified": True})
@@ -402,12 +404,12 @@ async def test_login_raises_422_when_userinfo_missing_email(oauth_service, user_
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 400
     user_repo.get_one.assert_not_called()
 
 
 @respx.mock
-async def test_login_raises_422_when_userinfo_sub_and_email_are_empty_strings(
+async def test_login_raises_400_when_userinfo_sub_and_email_are_empty_strings(
     oauth_service, user_repo
 ):
     mock_google_token_endpoint()
@@ -422,7 +424,7 @@ async def test_login_raises_422_when_userinfo_sub_and_email_are_empty_strings(
             code="valid-code", state="matching-state", expected_state="matching-state"
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 400
     user_repo.get_one.assert_not_called()
 
 

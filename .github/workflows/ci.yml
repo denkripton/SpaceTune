@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  UV_VERSION: "0.5.11"
+  DB_USER: postgres
+  DB_PASSWORD: ci-test-password
+  DB_NAME: SpaceTune
+  JWT_SECRET_KEY: ci-test-secret-not-for-production
+  GOOGLE_CLIENT_ID: ci-test-client-id
+  GOOGLE_REDIRECT_URI: https://ci-test.invalid/callback
+  GOOGLE_CLIENT_SECRET: ci-test-client-secret
+  GOOGLE_USERINFO_URL: https://ci-test.invalid/userinfo
+  AWS_SECRET: ci-test-aws-secret
+  AWS_ACCESS: ci-test-aws-access
+  AWS_REGION: us-east-1
+  BUCKET_NAME: ci-test-bucket
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Install ruff
+        run: uv sync --frozen --package backend --group dev
+
+      - name: Run ruff check
+        working-directory: backend
+        run: uv run ruff check .
+
+  pip-audit:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Export requirements for audit
+        run: uv export --frozen --package backend --no-hashes -o requirements-audit.txt
+
+      - name: Run pip-audit
+        run: uvx pip-audit -r requirements-audit.txt
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --package backend --group dev
+
+      - name: Run unit tests
+        working-directory: backend
+        run: uv run pytest tests/unit -v --tb=short
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --package backend --group dev
+
+      - name: Start isolated test database
+        run: docker compose -f compose.yml -f compose.dev.yml up -d --wait db-test
+
+      - name: Run integration tests
+        working-directory: backend
+        run: uv run pytest tests/integration -v --tb=short
+
+      - name: Tear down test database
+        if: always()
+        run: docker compose -f compose.yml -f compose.dev.yml rm -fsv db-test

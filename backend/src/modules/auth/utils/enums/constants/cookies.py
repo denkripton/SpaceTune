@@ -1,0 +1,1 @@
+REFRESH_TOKEN_COOKIE = "refresh_token"  # noqa: S105 (cookie name, not a secret)

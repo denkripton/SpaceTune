@@ -3,11 +3,11 @@ from datetime import date
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from src.modules.auth.repository import UserRepository
 from src.modules.grades.repository import GradeRepository
 from src.modules.music.repository import TrackRepository
 from src.modules.profile.repository import ProfileRepository
-
 from tests.factories import (
     create_real_grade,
     create_real_profile,

@@ -30,7 +30,7 @@ class Grade(Base):
         nullable=False,
     )
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     track_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tracks.id", ondelete="CASCADE")
     )

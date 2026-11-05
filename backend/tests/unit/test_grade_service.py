@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+
 from src.modules.grades.service import GradeService
 from src.utils.exceptions import ServiceError
-
 from tests.factories import make_fake_grade, make_fake_track, make_fake_user
 
 
@@ -16,21 +16,21 @@ def grade_service(track_repo, user_repo, grade_repo, fake_uow):
     )
 
 
-async def test_grade_track_raises_422_when_user_does_not_exist(
+async def test_grade_track_raises_404_when_user_does_not_exist(
     grade_service, user_repo
 ):
     user_repo.get_by_id = AsyncMock(return_value=None)
 
     with pytest.raises(ServiceError) as exc_info:
         await grade_service.grade_track(
-            user_id=uuid.uuid4(), track_id=uuid.uuid4(), user_grade=8
+            user=make_fake_user(), track_id=uuid.uuid4(), user_grade=8
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "User does not exist"
 
 
-async def test_grade_track_raises_422_when_track_does_not_exist(
+async def test_grade_track_raises_404_when_track_does_not_exist(
     grade_service, user_repo, track_repo
 ):
     user = make_fake_user()
@@ -39,10 +39,10 @@ async def test_grade_track_raises_422_when_track_does_not_exist(
 
     with pytest.raises(ServiceError) as exc_info:
         await grade_service.grade_track(
-            user_id=user.id, track_id=uuid.uuid4(), user_grade=8
+            user=user, track_id=uuid.uuid4(), user_grade=8
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 404
     assert exc_info.value.message == "Track does not exist"
 
 
@@ -60,7 +60,7 @@ async def test_grade_track_creates_new_grade_when_none_exists(
     grade_repo.create = AsyncMock(return_value=created_grade)
 
     result = await grade_service.grade_track(
-        user_id=user.id, track_id=track.id, user_grade=9
+        user=user, track_id=track.id, user_grade=9
     )
 
     grade_repo.create.assert_awaited_once()
@@ -87,7 +87,7 @@ async def test_grade_track_updates_existing_grade_instead_of_creating_new_one(
     grade_repo.get_one = AsyncMock(return_value=existing_grade)
 
     result = await grade_service.grade_track(
-        user_id=user.id, track_id=track.id, user_grade=10
+        user=user, track_id=track.id, user_grade=10
     )
 
     grade_repo.create.assert_not_called()
@@ -98,7 +98,7 @@ async def test_grade_track_updates_existing_grade_instead_of_creating_new_one(
     assert "Already Rated Track" in result
 
 
-async def test_grade_track_raises_422_when_concurrent_request_creates_grade_first(
+async def test_grade_track_raises_409_when_concurrent_request_creates_grade_first(
     grade_service, user_repo, track_repo, grade_repo
 ):
     user = make_fake_user()
@@ -114,10 +114,10 @@ async def test_grade_track_raises_422_when_concurrent_request_creates_grade_firs
 
     with pytest.raises(ServiceError) as exc_info:
         await grade_service.grade_track(
-            user_id=user.id, track_id=track.id, user_grade=7
+            user=user, track_id=track.id, user_grade=7
         )
 
-    assert exc_info.value.status_code == 422
+    assert exc_info.value.status_code == 409
     assert exc_info.value.message == "You have already graded this track"
     grade_repo.session.rollback.assert_awaited_once()
 
@@ -139,7 +139,7 @@ async def test_grade_track_rolls_back_on_create_failure(
 
     with pytest.raises(ServiceError) as exc_info:
         await grade_service.grade_track(
-            user_id=user.id, track_id=track.id, user_grade=99
+            user=user, track_id=track.id, user_grade=99
         )
 
     assert exc_info.value.status_code == 500

@@ -1,5 +1,5 @@
 import uuid
-from typing import Iterable
+from collections.abc import Iterable
 
 from sqlalchemy import func, select
 

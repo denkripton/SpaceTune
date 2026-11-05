@@ -13,7 +13,13 @@ from src.modules.music.schemas.track.read import TrackReadSchema
 from src.modules.music.utils import count_duration
 from src.modules.music.utils.enums import FileSizeLimit, MediaTypes
 from src.utils import UnitOfWork
-from src.utils.exceptions import FileSizeLimitExceeded, ServiceError
+from src.utils.exceptions import (
+    ConflictError,
+    FileSizeLimitExceeded,
+    InternalServerError,
+    NotFoundError,
+    ValidationError,
+)
 from src.utils.uploads import SizeLimitedStream
 
 
@@ -31,30 +37,29 @@ class TrackService:
         self.__uow = uow
 
     async def create_track(
-        self, user_id: str, data: TrackCreationSchema, music_file, image_file
+        self, user, data: TrackCreationSchema, music_file, image_file
     ):
-        user_id = uuid.UUID(user_id)
         data = data.model_dump()
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
-        track_aws_key = f"track/{user_id}/{uuid.uuid4()}"
-        image_aws_key = f"image/{user_id}/{uuid.uuid4()}"
+        track_aws_key = f"track/{user.id}/{uuid.uuid4()}"
+        image_aws_key = f"image/{user.id}/{uuid.uuid4()}"
 
         existing_track = await self.__track_repo.get_one(
-            owner_id=user_id, name=data["name"]
+            owner_id=user.id, name=data["name"]
         )
 
         if existing_track is not None:
-            raise ServiceError(code=422, msg="Track already exist")
+            raise ConflictError(msg="Track already exist")
 
         if music_file.content_type not in MediaTypes.AUDIO_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid audio file type")
+            raise ValidationError(msg="Invalid audio file type")
 
         if image_file.content_type not in MediaTypes.IMAGE_TYPES.value:
-            raise ServiceError(code=422, msg="Invalid image file type")
+            raise ValidationError(msg="Invalid image file type")
 
         data["track_url"] = track_aws_key
         data["photo_url"] = image_aws_key
@@ -64,7 +69,7 @@ class TrackService:
             result_artists.append(artist)
         data["artists"] = result_artists
 
-        data["owner_id"] = user_id
+        data["owner_id"] = user.id
         data["duration"] = await count_duration(file=music_file)
 
         limited_music_stream = SizeLimitedStream(
@@ -77,10 +82,10 @@ class TrackService:
                 file_type=music_file.content_type,
                 key=track_aws_key,
             )
-        except FileSizeLimitExceeded as e:
-            raise ServiceError(code=422, msg="Audio file is too big") from e
+        except FileSizeLimitExceeded:
+            raise
         except Exception as e:
-            raise ServiceError(code=500, msg="Failed to upload media") from e
+            raise InternalServerError(msg="Failed to upload media") from e
 
         limited_image_stream = SizeLimitedStream(
             image_file.file, max_bytes=FileSizeLimit.MAX_IMAGE_SIZE.value
@@ -92,18 +97,18 @@ class TrackService:
                 file_type=image_file.content_type,
                 key=image_aws_key,
             )
-        except FileSizeLimitExceeded as e:
+        except FileSizeLimitExceeded:
             await bucket_manager.delete_file(key=track_aws_key)
-            raise ServiceError(code=422, msg="Image file is too big") from e
+            raise
         except Exception as e:
             await bucket_manager.delete_file(key=track_aws_key)
-            raise ServiceError(code=500, msg="Failed to upload media") from e
+            raise InternalServerError(msg="Failed to upload media") from e
 
         try:
             track = await self.__track_repo.create(**data)
             await self.__uow.commit(conflict_msg="Track already exist")
             await self.__uow.refresh(track)
-        except ServiceError:
+        except ConflictError:
             await bucket_manager.delete_file(key=track_aws_key)
             await bucket_manager.delete_file(key=image_aws_key)
             raise
@@ -112,7 +117,7 @@ class TrackService:
             await bucket_manager.delete_file(key=track_aws_key)
             await bucket_manager.delete_file(key=image_aws_key)
             logger.warning(e)
-            raise ServiceError(code=500, msg="Failed to save track") from e
+            raise InternalServerError(msg="Failed to save track") from e
 
         metadata = TrackReadSchema(
             id=track.id,
@@ -124,15 +129,15 @@ class TrackService:
 
         return metadata
 
-    async def delete_track(self, user_id, track_id):
-        existing_user = await self.__user_repo.get_by_id(id=user_id)
+    async def delete_track(self, user, track_id: uuid.UUID):
+        existing_user = await self.__user_repo.get_by_id(id=user.id)
 
         if existing_user is None:
-            raise ServiceError(code=422, msg="User does not exist")
+            raise NotFoundError(msg="User does not exist")
 
-        existing_track = await self.__track_repo.get_one(id=track_id, owner_id=user_id)
+        existing_track = await self.__track_repo.get_one(id=track_id, owner_id=user.id)
         if existing_track is None:
-            raise ServiceError(code=422, msg="Track does not exist")
+            raise NotFoundError(msg="Track does not exist")
 
         track_photo = existing_track.photo_url
         track_audio = existing_track.track_url
@@ -143,7 +148,7 @@ class TrackService:
         except Exception as e:
             await self.__uow.rollback()
             logger.warning(e)
-            raise ServiceError(code=500, msg="Failed to delete track") from e
+            raise InternalServerError(msg="Failed to delete track") from e
 
         try:
             await bucket_manager.delete_file(key=track_audio)
@@ -157,11 +162,11 @@ class TrackService:
 
         return "Track has been deleted succesfuly"
 
-    async def get_track(self, track_id):
+    async def get_track(self, track_id: uuid.UUID):
 
         existing_track = await self.__track_repo.get_by_id(id=track_id)
         if existing_track is None:
-            raise ServiceError(code=422, msg="Track does not exist")
+            raise NotFoundError(msg="Track does not exist")
 
         aggregates = await self.__grade_repo.get_aggregates_by_track_ids(
             [existing_track.id]
@@ -185,9 +190,9 @@ class TrackService:
 
         return {"metadata": metadata, "media": media}
 
-    async def get_my_tracks(self, user_id):
+    async def get_my_tracks(self, user):
 
-        tracks = await self.__track_repo.get_many(owner_id=user_id)
+        tracks = await self.__track_repo.get_many(owner_id=user.id)
         track_ids = [track.id for track in tracks]
 
         aggregates = await self.__grade_repo.get_aggregates_by_track_ids(track_ids)

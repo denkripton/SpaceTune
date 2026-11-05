@@ -1,6 +1,7 @@
 import httpx
 import pytest
 from httpx import ASGITransport
+
 from src.api import api
 from src.modules.health.dependencies import get_health_service
 from src.modules.health.schemas import HealthReadSchema

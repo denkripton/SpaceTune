@@ -20,9 +20,6 @@ services:
       - "8000"
       - --reload
 
-  db:
-    ports:
-      - "5433:5432"
 
 networks:
   internal:

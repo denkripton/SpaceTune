@@ -1,12 +1,12 @@
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from src.utils.exceptions import ServiceError
 from src.config import logger
+from src.utils.exceptions import ServiceError
 
 
 class ErrorHandlingRoute(APIRoute):

@@ -1,62 +1,39 @@
-import os
-from unittest.mock import patch, MagicMock
-from urllib.parse import quote
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-from src.databases.sql_db import Base
 
-TEST_DB_URL = os.environ.get("TEST_DB_URL")
+from src.config import settings
+from src.databases.sql_db import Base
 
 
 @pytest_asyncio.fixture(scope="session")
-async def postgres_engine(tmp_path_factory):
-    pgserver_instance = None
+async def postgres_engine():
+    test_db_url = settings.TEST_DB_URL
+    if not test_db_url:
+        pytest.fail(
+            "Integration tests require TEST_DB_URL. Run `docker compose up -d db` "
+            "and set TEST_DB_URL in backend/.env (see .env.example). There is no "
+            "in-process fallback: pgserver has no wheels for Python 3.13, which "
+            "this project targets."
+        )
 
-    if TEST_DB_URL:
-        db_url = TEST_DB_URL
-    else:
-        try:
-            import pgserver
-        except ImportError:
-            pytest.skip(
-                "Integration tests require a real Postgres instance. "
-                "Set TEST_DB_URL in the environment, or install the "
-                "'pgserver' package for an ephemeral test database "
-                "without Docker."
-            )
-
-        pgdata_dir = tmp_path_factory.mktemp("pgdata")
-        pgserver_instance = pgserver.get_server(str(pgdata_dir))
-        try:
-            pgserver_instance.psql("CREATE DATABASE spacetune_test;")
-        except Exception as exc:
-            pgserver_instance.cleanup()
-            pytest.skip(f"Failed to create test database via pgserver: {exc}")
-
-        socket_dir = quote(str(pgserver_instance.pgdata), safe="")
-        db_url = f"postgresql+asyncpg://postgres@/spacetune_test?host={socket_dir}"
-
-    engine = create_async_engine(db_url, echo=False, poolclass=NullPool)
+    engine = create_async_engine(test_db_url, echo=False, poolclass=NullPool)
     try:
         async with engine.begin() as conn:
             await conn.run_sync(lambda c: None)
     except Exception as exc:
         await engine.dispose()
-        if pgserver_instance:
-            pgserver_instance.cleanup()
-        pytest.skip(
-            f"Integration tests require a real Postgres instance at "
-            f"{db_url!r}, but the connection failed: {exc}."
+        pytest.fail(
+            f"Could not connect to TEST_DB_URL={test_db_url!r}: {exc}. "
+            "Is `docker compose up -d db` running?"
         )
 
     yield engine
 
     await engine.dispose()
-    if pgserver_instance:
-        pgserver_instance.cleanup()
 
 
 @pytest_asyncio.fixture
@@ -78,8 +55,8 @@ async def db_session(postgres_engine):
 @pytest.fixture
 def mocked_bucket_manager():
     fake = MagicMock()
-    fake.upload_file.return_value = "fake-key"
-    fake.delete_file.return_value = None
+    fake.upload_file = AsyncMock(return_value="fake-key")
+    fake.delete_file = AsyncMock(return_value=None)
     fake.presigned_url.return_value = "https://s3.fake/presigned-url"
     with patch("src.modules.music.service.bucket_manager", fake):
         yield fake
